@@ -163,12 +163,18 @@
     },
     {
       "code": "019441", "name": "万家纳斯达克100指数发起式（QDII）A", "manager": "万家基金", "adapter": "wanjia", "currency": "CNY", "shareClass": "A",
-      "officialSources": [{ "url": "https://www.wjasset.com/products/qdii/019441/news/report/index.html", "kind": "notice-index", "channel": { "kind": "direct", "access": "all" }, "followLinks": true }],
+      "officialSources": [
+        { "url": "https://www.wjasset.com/upload/pdf/1783510633469-gywjnsdk100zsxfqszqtzjj(QDII)dzdesg(hdqdetz)ywjexzdgg.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" } },
+        { "url": "https://www.wjasset.com/products/qdii/019441/news/report/index.html", "kind": "notice-index", "followLinks": true }
+      ],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {
       "code": "019442", "name": "万家纳斯达克100指数发起式（QDII）C", "manager": "万家基金", "adapter": "wanjia", "currency": "CNY", "shareClass": "C",
-      "officialSources": [{ "url": "https://www.wjasset.com/products/qdii/019441/news/report/index.html", "kind": "notice-index", "channel": { "kind": "direct", "access": "all" }, "followLinks": true }],
+      "officialSources": [
+        { "url": "https://www.wjasset.com/upload/pdf/1783510633469-gywjnsdk100zsxfqszqtzjj(QDII)dzdesg(hdqdetz)ywjexzdgg.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" } },
+        { "url": "https://www.wjasset.com/products/qdii/019441/news/report/index.html", "kind": "notice-index", "followLinks": true }
+      ],
       "agency": { "eastmoney": true }, "manualChannels": []
     }
   ]
