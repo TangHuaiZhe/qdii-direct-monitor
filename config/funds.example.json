@@ -1,0 +1,72 @@
+{
+  "outputDir": "../data",
+  "historyLimit": 180,
+  "fetch": { "concurrency": 3, "timeoutMs": 20000 },
+  "schedule": { "intervalMinutes": 30 },
+  "notifications": { "type": "feishu", "mode": "changes", "urlEnv": "QDII_WEBHOOK_URL" },
+  "funds": [
+    {
+      "code": "016532", "name": "嘉实纳斯达克100ETF发起联接（QDII）A人民币", "manager": "嘉实基金", "adapter": "jiashi", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://www.jsfund.cn/main/a/20151216/191092.shtml", "kind": "current-status", "channel": { "kind": "direct", "access": "all" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "161130", "name": "易方达纳斯达克100ETF联接（QDII-LOF）A人民币", "manager": "易方达基金", "adapter": "efunds", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://e.efunds.com.cn/cart/aips?form=&fundCode=161130", "kind": "product", "channel": { "kind": "direct", "access": "web" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "018966", "name": "汇添富纳斯达克100ETF发起式联接（QDII）人民币A", "manager": "汇添富基金", "adapter": "huitianfu", "currency": "CNY", "shareClass": "A",
+      "officialSources": [
+        { "url": "https://www.99fund.com/announcement/zx/upload/2026/20260716/ecd854ee54854a1f8841b03de46ef33e.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-07-17" },
+        { "url": "https://www.99fund.com/main/products/pofund/018966/fundgg.shtml", "kind": "notice-index", "followLinks": true }
+      ],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "016055", "name": "博时纳斯达克100ETF发起式联接（QDII）A人民币", "manager": "博时基金", "adapter": "bosera", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://www.bosera.com/fund/016055.html", "kind": "product", "channel": { "kind": "direct", "access": "all" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "019547", "name": "招商纳斯达克100ETF发起式联接（QDII）A", "manager": "招商基金", "adapter": "cmf", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://www.cmfchina.com/web/noticedetails/225156/index.html", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-07-27" }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "270042", "name": "广发纳斯达克100ETF联接（QDII）人民币A", "manager": "广发基金", "adapter": "gf", "currency": "CNY", "shareClass": "A",
+      "officialSources": [
+        { "url": "https://www.gffunds.com.cn/jjgg/zdsj/202510/P020251030313077936960.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2025-10-31" },
+        { "url": "https://gfwx.gffunds.com.cn/funds/?fundcode=270042", "kind": "product", "followLinks": true }
+      ],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "040046", "name": "华安纳斯达克100ETF联接（QDII）A", "manager": "华安基金", "adapter": "huaan", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://www.huaan.com.cn/funds/040046/index.shtml", "kind": "product", "channel": { "kind": "direct", "access": "all" }, "followLinks": true }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "000834", "name": "大成纳斯达克100ETF联接（QDII）A", "manager": "大成基金", "adapter": "dacheng", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{
+        "url": "https://www.dcfund.com.cn/plat_files/upload/ann_upload/20260602/202606021780401593666.pdf",
+        "kind": "notice",
+        "channels": [
+          { "kind": "direct", "access": "web" },
+          { "kind": "direct", "access": "app" },
+          { "kind": "direct", "access": "counter" }
+        ],
+        "effectiveDate": "2026-06-04"
+      }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "016452", "name": "南方纳斯达克100指数发起（QDII）A", "manager": "南方基金", "adapter": "southern", "currency": "CNY", "shareClass": "A",
+      "officialSources": [
+        { "url": "https://www.nffund.com/main/files/2025/11/19/369909084677.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2025-11-20" },
+        { "url": "https://www.nffund.com/new/transaction-guide/product-status-and-limits.html", "kind": "current-status" }
+      ],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    }
+  ]
+}

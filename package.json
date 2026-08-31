@@ -1,0 +1,18 @@
+{
+  "name": "qdii-direct-monitor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Direct-sale-first monitor for China Nasdaq-100 QDII purchase limits",
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/cli.js run --config config/funds.example.json",
+    "build:site": "node src/site.js",
+    "watch": "node src/cli.js watch --config config/funds.example.json",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "pdfjs-dist": "4.8.69"
+  }
+}

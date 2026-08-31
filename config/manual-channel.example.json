@@ -1,0 +1,10 @@
+{
+  "channel": { "kind": "agency", "access": "bank", "name": "示例银行" },
+  "status": "limited",
+  "limitAmount": 1000,
+  "currency": "CNY",
+  "sourceUrl": "https://example-bank.invalid/fund/016532",
+  "verifiedAt": "2026-08-29T01:00:00.000Z",
+  "expiresAt": "2026-08-30T01:00:00.000Z",
+  "notes": ["把这个对象加入某只基金的 manualChannels；必须设置短有效期。"]
+}
