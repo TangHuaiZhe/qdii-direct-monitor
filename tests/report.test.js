@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { amountLabel, feeBand, feeLabel, rankPurchasableFunds, reliabilityReasonLabel, renderHtml } = require("../src/report");
+const { amountLabel, feeBand, feeLabel, rankPurchasableFunds, reliabilityReasonLabel, renderFundHtml, renderHtml } = require("../src/report");
 
 function payload(overrides = {}) {
   return { observedAt: "2026-08-29T04:47:59.125Z", warnings: [], changes: [], fees: [{
@@ -69,4 +69,12 @@ test("HTML includes a concise purchase-convenience summary", () => {
   assert.match(html, /年费率 0\.80%/);
   assert.match(html, /fee-low/);
   assert.match(html, /低费率/);
+});
+
+test("renders an indexable fund detail page", () => {
+  const html = renderFundHtml(payload(), "040046");
+  assert.match(html, /华安纳指 040046/);
+  assert.match(html, /rel="canonical"/);
+  assert.match(html, /application\/ld\+json/);
+  assert.match(html, /最高可信直销额度/);
 });
