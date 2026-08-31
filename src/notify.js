@@ -1,5 +1,7 @@
 "use strict";
 
+const nodemailer = require("nodemailer");
+
 function formatChange(change) {
   const row = change.after || change.before;
   const amount = change.after?.limitAmount == null ? change.after?.status || "removed" : `${change.after.limitAmount} ${change.after.currency}`;
@@ -12,6 +14,7 @@ function notificationText(payload) {
 
 async function notify(payload, config = {}) {
   if (!payload.changes.length && config.mode !== "always") return { sent: false, reason: "no-changes" };
+  if (config.type === "email") return sendEmail(payload, config);
   const url = config.url || (config.urlEnv ? process.env[config.urlEnv] : "");
   if (!url) return { sent: false, reason: "missing-webhook" };
   const target = new URL(url);
@@ -28,4 +31,28 @@ async function notify(payload, config = {}) {
   return { sent: true, status: response.status };
 }
 
-module.exports = { formatChange, notificationText, notify };
+async function sendEmail(payload, config = {}) {
+  const host = config.host || process.env[config.hostEnv || "QDII_SMTP_HOST"];
+  const port = Number(config.port || process.env[config.portEnv || "QDII_SMTP_PORT"] || 587);
+  const user = config.user || process.env[config.userEnv || "QDII_SMTP_USER"];
+  const pass = config.password || process.env[config.passwordEnv || "QDII_SMTP_PASSWORD"];
+  const to = config.to || process.env[config.toEnv || "QDII_EMAIL_TO"] || "tanghuaizhe@me.com";
+  const from = config.from || process.env[config.fromEnv || "QDII_EMAIL_FROM"] || user;
+  if (!host || !user || !pass || !from || !to) return { sent: false, reason: "missing-email-config" };
+  const transport = (config._transportFactory || nodemailer.createTransport)({
+    host,
+    port,
+    secure: config.secure ?? port === 465,
+    auth: { user, pass }
+  });
+  const text = notificationText(payload);
+  await transport.sendMail({
+    from,
+    to,
+    subject: "QDII 申购额度变化（" + payload.changes.length + " 条）",
+    text
+  });
+  return { sent: true, channel: "email", to };
+}
+
+module.exports = { formatChange, notificationText, notify, sendEmail };

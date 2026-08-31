@@ -124,6 +124,20 @@ npm start
 
 飞书使用 `"type": "feishu"`；其他接收 JSON 的端点使用 `"type": "generic"`。`mode` 可设为 `changes`（默认）或 `always`。第一次运行没有比较基线，因此不会把全部现状当作变化发送。
 
+### 邮件通知
+
+示例配置已使用邮件通知，收件人为 `tanghuaizhe@me.com`。只有检测到额度或状态变化时才发送邮件。GitHub Actions 需要在仓库 Settings → Secrets and variables → Actions 中配置以下 Secrets：
+
+| Secret | 用途 | iCloud 邮箱示例 |
+|---|---|---|
+| `QDII_SMTP_HOST` | SMTP 服务器 | `smtp.mail.me.com` |
+| `QDII_SMTP_PORT` | SMTP 端口 | `587` |
+| `QDII_SMTP_USER` | 发件邮箱 | 你的 iCloud 邮箱 |
+| `QDII_SMTP_PASSWORD` | SMTP 密码 | iCloud 专用 App 密码 |
+| `QDII_EMAIL_FROM` | 发件人地址 | 与 SMTP 用户一致 |
+
+iCloud 邮箱必须使用“App 专用密码”，不要使用 Apple ID 主密码。未配置完整时，网站仍会正常更新，但运行结果会标记 `missing-email-config`，不会发送邮件。
+
 ## 公共网站与自动更新
 
 项目使用 GitHub Actions 抓取并部署 GitHub Pages：

@@ -5,7 +5,9 @@
   "description": "Direct-sale-first monitor for China Nasdaq-100 QDII purchase limits",
   "license": "MIT",
   "type": "commonjs",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node src/cli.js run --config config/funds.example.json",
     "build:site": "node src/site.js",
@@ -13,6 +15,7 @@
     "test": "node --test"
   },
   "dependencies": {
+    "nodemailer": "^7.0.13",
     "pdfjs-dist": "4.8.69"
   }
 }

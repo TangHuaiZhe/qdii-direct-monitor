@@ -3,7 +3,7 @@
   "historyLimit": 180,
   "fetch": { "concurrency": 3, "feeConcurrency": 1, "timeoutMs": 20000 },
   "schedule": { "intervalMinutes": 30 },
-  "notifications": { "type": "feishu", "mode": "changes", "urlEnv": "QDII_WEBHOOK_URL" },
+  "notifications": { "type": "email", "mode": "changes", "hostEnv": "QDII_SMTP_HOST", "portEnv": "QDII_SMTP_PORT", "userEnv": "QDII_SMTP_USER", "passwordEnv": "QDII_SMTP_PASSWORD", "fromEnv": "QDII_EMAIL_FROM", "to": "tanghuaizhe@me.com" },
   "funds": [
     {
       "code": "016532", "name": "嘉实纳斯达克100ETF发起联接（QDII）A人民币", "manager": "嘉实基金", "adapter": "jiashi", "currency": "CNY", "shareClass": "A",

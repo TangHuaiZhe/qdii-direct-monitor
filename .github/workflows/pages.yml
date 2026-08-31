@@ -47,6 +47,11 @@ jobs:
       - name: Fetch current limits and build site
         env:
           QDII_WEBHOOK_URL: ${{ secrets.QDII_WEBHOOK_URL }}
+          QDII_SMTP_HOST: ${{ secrets.QDII_SMTP_HOST }}
+          QDII_SMTP_PORT: ${{ secrets.QDII_SMTP_PORT }}
+          QDII_SMTP_USER: ${{ secrets.QDII_SMTP_USER }}
+          QDII_SMTP_PASSWORD: ${{ secrets.QDII_SMTP_PASSWORD }}
+          QDII_EMAIL_FROM: ${{ secrets.QDII_EMAIL_FROM }}
         run: |
           npm start
           npm run build:site
