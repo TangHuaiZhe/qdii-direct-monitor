@@ -2,6 +2,14 @@
 
 function clean(value) { return String(value || "").replace(/\s+/g, " ").trim(); }
 
+function normalizeExtractedText(value) {
+  return clean(value)
+    .replace(/([\p{Script=Han}])\s+(?=[\p{Script=Han}])/gu, "$1")
+    .replace(/\s*([（）：])\s*/g, "$1")
+    .replace(/(\d)\s*\.\s*(?=\d)/g, "$1.")
+    .replace(/(\d)\s+(?=\d\.\d)/g, "$1");
+}
+
 function htmlToText(html) {
   return clean(String(html || "")
     .replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ")
@@ -29,18 +37,19 @@ async function resourceToText(resource) {
 }
 
 function parseAmount(text) {
+  const value = normalizeExtractedText(text);
   const patterns = [
-    /(?:限制(?:申购|大额申购)?金额|单日累计(?:购买|申购)上限|单日(?:单个基金账户)?(?:累计)?(?:申购|购买)(?:及[^，。；]{0,20})?(?:金额)?(?:应)?不超过|单日单账户限额|直销)\D{0,30}([\d,]+(?:\.\d+)?)\s*(万|人民币元|元|美元)/,
+    /(?:限制(?:申购|大额申购)?(?:（含[^）]{0,30}）)?金额|单日累计(?:购买|申购)上限|单日(?:单个基金账户)?(?:累计)?(?:申购|购买)(?:及[^，。；]{0,20})?(?:金额)?(?:应)?不超过|单日单账户限额|直销)\D{0,30}([\d,]+(?:\.\d+)?)\s*(万|人民币元|元|美元)/,
     /([\d,]+(?:\.\d+)?)\s*(万|人民币元|元|美元)\s*(?:限额申购|限购|上限)/,
     /(?:单日[^，。；]{0,120}(?:不应超过|应不超过|业务限额为|金额超过)|申请金额大于)\s*([\d,\s]+(?:\.\d+)?)\s*(万|人民币元|元|美元)/
   ];
   for (const pattern of patterns) {
-    const match = clean(text).match(pattern);
+    const match = value.match(pattern);
     if (!match) continue;
-    const value = Number(match[1].replace(/[,\s]/g, ""));
-    if (Number.isFinite(value) && value > 0) return { amount: match[2] === "万" ? value * 10000 : value, currency: match[2] === "美元" ? "USD" : "CNY" };
+    const amount = Number(match[1].replace(/[,\s]/g, ""));
+    if (Number.isFinite(amount) && amount > 0) return { amount: match[2] === "万" ? amount * 10000 : amount, currency: match[2] === "美元" ? "USD" : "CNY" };
   }
-  const unitBefore = clean(text).match(/(?:限制申购金额|下属基金份额的限制金额)\s*[（(][^）)]*(人民币元|美元)[）)]\s*([\d,\s]+(?:\.\d+)?)/);
+  const unitBefore = value.match(/(?:限制申购(?:（含[^）]{0,30}）)?金额|下属(?:基金份额|分级基金)的限制(?:申购)?(?:（含[^）]{0,30}）)?金额)\s*（[^）]*(人民币元|元|美元)）\s*([\d,]+(?:\.\d+)?)/);
   if (unitBefore) {
     const value = Number(unitBefore[2].replace(/[,\s]/g, ""));
     if (Number.isFinite(value) && value > 0) return { amount: value, currency: unitBefore[1] === "美元" ? "USD" : "CNY" };
@@ -48,8 +57,27 @@ function parseAmount(text) {
   return null;
 }
 
+function parseShareAmount(text, fund) {
+  const value = normalizeExtractedText(text);
+  const codeRows = [...value.matchAll(/下属(?:基金份额|分级基金)的(?:交易)?代码\s+((?:\d{6}\s+){1,7}\d{6})/g)];
+  for (const match of codeRows) {
+    const codes = match[1].match(/\d{6}/g) || [];
+    const fundIndex = codes.indexOf(fund.code);
+    if (fundIndex < 0) continue;
+    const tail = value.slice(match.index + match[0].length);
+    const label = tail.match(/(?:下属(?:基金份额|分级基金)的限制申购(?:（含[^）]{0,30}）)?金额|该基金份额的限制金额)（?[^\d]{0,30}(人民币元|元|美元)?）?\s*/);
+    if (!label) continue;
+    const amounts = tail.slice(label.index + label[0].length).match(/[\d,]+(?:\.\d+)?(?:\s*万)?/g) || [];
+    if (!amounts[fundIndex]) continue;
+    const raw = amounts[fundIndex];
+    const amount = Number(raw.replace(/[,\s万]/g, "")) * (raw.includes("万") ? 10000 : 1);
+    if (Number.isFinite(amount) && amount > 0) return { amount, currency: label[1] === "美元" ? "USD" : (fund.currency || "CNY") };
+  }
+  return null;
+}
+
 function parseStatus(text) {
-  const value = clean(text);
+  const value = normalizeExtractedText(text);
   if (/(暂停申购|停止申购|暂不开放购买|不可购买)/.test(value)) return "suspended";
   if (/(限制大额申购|暂停大额申购|限大额|限额申购|限购|单日单账户限额)/.test(value)) return "limited";
   if (/(恢复申购|开放申购|开放购买|立即申购)/.test(value)) return "open";
@@ -100,4 +128,4 @@ function extractPdfLinks(html, baseUrl) {
   return [...new Set(links)].slice(0, 2);
 }
 
-module.exports = { clean, extractPdfLinks, extractRelevantLinks, focusText, htmlToText, inferChannels, parseAmount, parseStatus, resourceToHtml, resourceToText };
+module.exports = { clean, extractPdfLinks, extractRelevantLinks, focusText, htmlToText, inferChannels, normalizeExtractedText, parseAmount, parseShareAmount, parseStatus, resourceToHtml, resourceToText };

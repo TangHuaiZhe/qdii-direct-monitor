@@ -67,6 +67,109 @@
         { "url": "https://www.nffund.com/new/transaction-guide/product-status-and-limits.html", "kind": "current-status" }
       ],
       "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "008971", "name": "大成纳斯达克100ETF联接（QDII）C", "manager": "大成基金", "adapter": "dacheng", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{
+        "url": "https://www.dcfund.com.cn/plat_files/upload/ann_upload/20260602/202606021780401593666.pdf",
+        "kind": "notice",
+        "channels": [
+          { "kind": "direct", "access": "web" },
+          { "kind": "direct", "access": "app" },
+          { "kind": "direct", "access": "counter" }
+        ],
+        "effectiveDate": "2026-06-04"
+      }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "014978", "name": "华安纳斯达克100ETF联接（QDII）C", "manager": "华安基金", "adapter": "huaan", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{ "url": "https://www.huaan.com.cn/funds/014978/index.shtml", "kind": "product", "channel": { "kind": "direct", "access": "all" }, "followLinks": true }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "018967", "name": "汇添富纳斯达克100ETF发起式联接（QDII）人民币C", "manager": "汇添富基金", "adapter": "huitianfu", "currency": "CNY", "shareClass": "C",
+      "officialSources": [
+        { "url": "https://www.99fund.com/announcement/zx/upload/2026/20260716/ecd854ee54854a1f8841b03de46ef33e.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-07-17" },
+        { "url": "https://www.99fund.com/main/products/pofund/018967/fundgg.shtml", "kind": "notice-index", "followLinks": true }
+      ],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "016453", "name": "南方纳斯达克100指数发起（QDII）C", "manager": "南方基金", "adapter": "southern", "currency": "CNY", "shareClass": "C",
+      "officialSources": [
+        { "url": "https://www.nffund.com/main/files/2025/11/19/369909084677.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2025-11-20" },
+        { "url": "https://www.nffund.com/new/transaction-guide/product-status-and-limits.html", "kind": "current-status" }
+      ],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "019548", "name": "招商纳斯达克100ETF发起式联接（QDII）C", "manager": "招商基金", "adapter": "cmf", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{ "url": "https://www.cmfchina.com/web/noticedetails/225156/index.html", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-07-27" }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "006479", "name": "广发纳斯达克100ETF联接（QDII）人民币C", "manager": "广发基金", "adapter": "gf", "currency": "CNY", "shareClass": "C",
+      "officialSources": [
+        { "url": "https://www.gffunds.com.cn/jjgg/zdsj/202510/P020251030313077936960.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2025-10-31" },
+        { "url": "https://gfwx.gffunds.com.cn/funds/?fundcode=006479", "kind": "product", "followLinks": true }
+      ],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "160213", "name": "国泰纳斯达克100指数（QDII）", "manager": "国泰基金", "adapter": "guotai", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://e.gtfund.com/etrade/Jijin/view/id/160213", "kind": "current-status", "channel": { "kind": "direct", "access": "web" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "019736", "name": "宝盈纳斯达克100指数发起（QDII）A人民币", "manager": "宝盈基金", "adapter": "baoying", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://www.byfunds.com/fundDetail/019736/index.html", "kind": "product", "channel": { "kind": "direct", "access": "web" }, "followLinks": true }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "019737", "name": "宝盈纳斯达克100指数发起（QDII）C人民币", "manager": "宝盈基金", "adapter": "baoying", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{ "url": "https://www.byfunds.com/fundDetail/019737/index.html", "kind": "product", "channel": { "kind": "direct", "access": "web" }, "followLinks": true }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "019524", "name": "华泰柏瑞纳斯达克100ETF发起式联接（QDII）A", "manager": "华泰柏瑞基金", "adapter": "huataipb", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://www.huatai-pb.com/upload/pdf/1776840600073-156-1kmddiq2mjc1p.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-04-23" }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "019525", "name": "华泰柏瑞纳斯达克100ETF发起式联接（QDII）C", "manager": "华泰柏瑞基金", "adapter": "huataipb", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{ "url": "https://www.huatai-pb.com/upload/pdf/1776840600073-156-1kmddiq2mjc1p.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-04-23" }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "539001", "name": "建信纳斯达克100指数（QDII）A人民币", "manager": "建信基金", "adapter": "ccb", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://www.ccbfund.cn/resource/static/content/303416.html", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-08-12" }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "012752", "name": "建信纳斯达克100指数（QDII）C人民币", "manager": "建信基金", "adapter": "ccb", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{ "url": "https://www.ccbfund.cn/resource/static/content/303416.html", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-08-12" }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "019172", "name": "摩根纳斯达克100指数（QDII）人民币A", "manager": "摩根基金", "adapter": "jpmorgan", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://www.cifm.com/fund/019172/announce/202604/P020260424584478201394.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-04-27" }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "019173", "name": "摩根纳斯达克100指数（QDII）人民币C", "manager": "摩根基金", "adapter": "jpmorgan", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{ "url": "https://www.cifm.com/fund/019172/announce/202604/P020260424584478201394.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-04-27" }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "019441", "name": "万家纳斯达克100指数发起式（QDII）A", "manager": "万家基金", "adapter": "wanjia", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://www.wjasset.com/products/qdii/019441/news/report/index.html", "kind": "notice-index", "channel": { "kind": "direct", "access": "all" }, "followLinks": true }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "019442", "name": "万家纳斯达克100指数发起式（QDII）C", "manager": "万家基金", "adapter": "wanjia", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{ "url": "https://www.wjasset.com/products/qdii/019441/news/report/index.html", "kind": "notice-index", "channel": { "kind": "direct", "access": "all" }, "followLinks": true }],
+      "agency": { "eastmoney": true }, "manualChannels": []
     }
   ]
 }

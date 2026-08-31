@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { focusText, inferChannels, parseAmount, parseStatus, resourceToText } = require("../src/parser");
+const { focusText, inferChannels, parseAmount, parseShareAmount, parseStatus, resourceToText } = require("../src/parser");
 
 test("parses Chinese ten-thousand amount", () => assert.equal(parseAmount("单日单个基金账户累计申购金额不超过 1 万元").amount, 10000));
 test("parses direct product-page wording", () => {
@@ -16,6 +16,16 @@ test("parses current Eastmoney limit wording", () => {
 });
 test("parses official notice when currency unit precedes the amount", () => {
   assert.deepEqual(parseAmount("限制申购金额（单位：人民币元） 2,000.00"), { amount: 2000, currency: "CNY" });
+});
+test("parses spaced PDF text around a unit-before amount", () => {
+  const text = "限制申购 （ 含定期定 额投资 ） 金额 （ 单位 ： 人民币元） 1 0 .00";
+  assert.deepEqual(parseAmount(text), { amount: 10, currency: "CNY" });
+  assert.equal(parseStatus("限制 大额申购"), "limited");
+});
+test("maps distinct share-class amounts by fund code", () => {
+  const text = "暂停大额申购 下属分级基金的交易代码 019736 019737 该分级基金是否暂停大额申购 是 是 下属分级基金的限制申购金额（单位：人民币元） 10 25 2. 其他需要提示的事项";
+  assert.deepEqual(parseShareAmount(text, { code: "019736", currency: "CNY" }), { amount: 10, currency: "CNY" });
+  assert.deepEqual(parseShareAmount(text, { code: "019737", currency: "CNY" }), { amount: 25, currency: "CNY" });
 });
 test("parses a PDF sentence using the RMB-yuan unit", () => {
   assert.deepEqual(parseAmount("单日单 个基金账户的申购金额不应超过 10 人民币元"), { amount: 10, currency: "CNY" });

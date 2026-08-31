@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const huaan = require("../src/adapters/huaan");
 const huitianfu = require("../src/adapters/huitianfu");
 const southern = require("../src/adapters/southern");
+const { adapters } = require("../src/adapters");
 
 test("official adapter produces a direct observation with evidence", async () => {
   const html = "<html><body>040046 交易状态 单日单账户限额直销100元 代销10元限额申购</body></html>";
@@ -49,4 +50,8 @@ test("Southern parses the latest A-share purchase limit notice", async () => {
   const rows = await southern.collect({ code: "016452", name: "南方纳指", manager: "南方基金", currency: "CNY", officialSources: [{ url: "https://www.nffund.com/x", kind: "notice", channel: { kind: "direct", access: "all" } }] }, context);
   assert.equal(rows[0].status, "limited");
   assert.equal(rows[0].limitAmount, 100);
+});
+
+test("new manager adapters are registered", () => {
+  for (const id of ["guotai", "baoying", "huataipb", "ccb", "jpmorgan", "wanjia"]) assert.ok(adapters[id], id);
 });

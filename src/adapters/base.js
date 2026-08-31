@@ -1,7 +1,7 @@
 "use strict";
 
 const { fetchResource } = require("../http");
-const { extractPdfLinks, extractRelevantLinks, focusText, inferChannels, parseAmount, parseStatus, resourceToHtml, resourceToText } = require("../parser");
+const { extractPdfLinks, extractRelevantLinks, focusText, inferChannels, parseAmount, parseShareAmount, parseStatus, resourceToHtml, resourceToText } = require("../parser");
 
 class OfficialDirectAdapter {
   constructor(spec) { Object.assign(this, spec); }
@@ -9,7 +9,7 @@ class OfficialDirectAdapter {
   async parseResource(resource, fund, source, observedAt) {
     const fullText = await resourceToText(resource);
     const text = this.focus ? this.focus(fullText, fund) : focusText(fullText, fund);
-    const amount = this.parseAmount ? this.parseAmount(text, fund) : parseAmount(text);
+    const amount = this.parseAmount ? this.parseAmount(text, fund) : (parseShareAmount(text, fund) || parseAmount(text));
     const inferredChannels = inferChannels(text);
     let channels = source.channels || (source.channel ? [source.channel] : inferredChannels.filter((channel) => channel.kind === "direct"));
     if (!channels.length) channels = [{ kind: "direct", access: "all" }];
