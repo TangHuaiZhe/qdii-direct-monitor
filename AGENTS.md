@@ -1,0 +1,49 @@
+# AGENTS.md
+
+## 项目目标
+
+本项目追踪国内纳斯达克 100 相关 QDII 基金的申购状态与每日额度。直销渠道优先，代销渠道用于补充和交叉观察。所有结果必须绑定明确的基金份额、销售入口、证据来源和可靠性等级。
+
+## 核心原则
+
+- 区分 `direct/web/app/counter/all` 与 `agency/eastmoney/alipay/bank/broker/all`，不得把不同渠道压成一个额度。
+- 不同渠道额度不得相加。购买便利度排名只取每只基金最高的可信可用渠道。
+- 页面无法安全解析时返回 `unknown/D`，不得猜测为开放申购。
+- D 级临时抓取结果不得覆盖上一条可信比较基线。
+- 官方公告只代表公开规则，不等同于登录后的真实下单验证；页面文案必须保留这一边界。
+- 不抓取登录接口，不绕过验证码，不保存 Cookie、账户信息或其他凭据。
+
+## Adapter 维护
+
+- 每家基金公司的逻辑放在独立的 `src/adapters/*.js` 中，并维护严格的官方 HTTPS 域名白名单。
+- 优先级为当前官方产品/交易展示页，其次是官方公告页或公告 PDF，最后才是 `unknown` 回退。
+- 基金公司页面结构或措辞变化时，只增加最小解析规则，并为真实结构增加测试样例。
+- 公告没有明确销售范围时，不得擅自标记为 `web`、`app` 或 `counter`。
+- 支付宝、银行和券商等登录态渠道只能使用带到期时间的人工核验记录，过期后必须自动失效。
+
+## 本地验证
+
+提交前至少运行：
+
+```bash
+npm ci
+npm test
+npm start
+npm run build:site
+```
+
+确认抓取结果包含 `observedAt`、`rows`、`warnings`、`health` 和输出路径。新增或修改解析规则时，还要验证页面变形不会产生虚假的开放或限额结果。
+
+## 数据与安全
+
+- 不提交 `data/`、`site/`、`node_modules/`、`.env` 或 `config/funds.local.json`。
+- Webhook 地址只通过 `QDII_WEBHOOK_URL` 环境变量或 GitHub Actions Secret 提供。
+- 公开网站只发布 `index.html`、`latest.html`、`latest.json`、`og.png` 和 `.nojekyll`。
+- `state.json` 和 `history/` 仅用于运行状态、变化检测和审计，不得发布到网站。
+
+## 发布
+
+- `main` 分支由 `.github/workflows/pages.yml` 自动部署到 GitHub Pages。
+- 工作日北京时间 09:10、14:30、20:30 定时抓取，也支持手动运行工作流。
+- 修改工作流后必须查看一次完整运行，确认测试、抓取、上传和 Pages 部署全部成功。
+- 若云端抓取受到基金公司限制，应显示警告并可靠降级，不得用陈旧或推测数据冒充当前结果。
