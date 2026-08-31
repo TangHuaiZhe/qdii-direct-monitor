@@ -45,9 +45,15 @@ function normalizeObservation(input) {
   return row;
 }
 
-function buildSnapshot(observedAt, rows) {
+function buildSnapshot(observedAt, rows, fees = []) {
   const normalized = rows.map(normalizeObservation);
-  return { schemaVersion: 1, observedAt, rows: normalized, byKey: Object.fromEntries(normalized.map((r) => [r.key, r])) };
+  return {
+    schemaVersion: fees.length ? 2 : 1,
+    observedAt,
+    rows: normalized,
+    byKey: Object.fromEntries(normalized.map((r) => [r.key, r])),
+    ...(fees.length ? { fees, feesByFund: Object.fromEntries(fees.map((fee) => [fee.fundCode, fee])) } : {})
+  };
 }
 
 function compareSnapshots(before, after) {

@@ -27,11 +27,21 @@ test("a first-seen D-grade channel remains in the baseline as unknown", () => {
   assert.equal(after.rows[0].status, "unknown");
 });
 
+test("D-grade fee failure reuses the last trusted fee snapshot", () => {
+  const baseRow = { fundCode: "040046", fundName: "x", manager: "x", currency: "CNY", channel: { kind: "direct", access: "web" }, status: "limited", limitAmount: 100, observedAt: "a", reliability: { grade: "A", reason: "official" } };
+  const trustedFee = { fundCode: "040046", annualRate: 0.8, reliability: { grade: "B", reason: "public" } };
+  const failedFee = { fundCode: "040046", annualRate: null, reliability: { grade: "D", reason: "failed" } };
+  const before = buildSnapshot("a", [baseRow], [trustedFee]);
+  const after = stableSnapshot("b", [baseRow], before, [failedFee]);
+  assert.equal(after.fees[0].annualRate, 0.8);
+});
+
 test("collector runs with an injected official source and no persistence", async () => {
   const config = { notifications: {}, funds: [{ code: "040046", name: "华安纳指", manager: "华安基金", adapter: "huaan", currency: "CNY", officialSources: [{ url: "https://www.huaan.com.cn/x", kind: "product" }], agency: { eastmoney: false } }] };
-  const fetchResource = async (url) => ({ bytes: Buffer.from("040046 单日单账户限额直销100元 限额申购"), contentType: "text/html", finalUrl: url });
+  const fetchResource = async (url) => ({ bytes: Buffer.from(url.includes("jjfl_") ? "管理费率 0.60% 托管费率 0.20% 销售服务费率 0.00%" : "040046 单日单账户限额直销100元 限额申购"), contentType: "text/html", finalUrl: url });
   const result = await run(config, { observedAt: "2026-08-29T00:00:00Z", fetchResource, save: false, baseDir: path.join(os.tmpdir(), `qdii-test-${process.pid}`) });
   assert.equal(result.rows.length, 1);
   assert.equal(result.rows[0].limitAmount, 100);
+  assert.equal(result.fees[0].annualRate, 0.8);
   assert.equal(result.notification.reason, "no-changes");
 });

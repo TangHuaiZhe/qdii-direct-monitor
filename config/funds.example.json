@@ -1,7 +1,7 @@
 {
   "outputDir": "../data",
   "historyLimit": 180,
-  "fetch": { "concurrency": 3, "timeoutMs": 20000 },
+  "fetch": { "concurrency": 3, "feeConcurrency": 1, "timeoutMs": 20000 },
   "schedule": { "intervalMinutes": 30 },
   "notifications": { "type": "feishu", "mode": "changes", "urlEnv": "QDII_WEBHOOK_URL" },
   "funds": [
