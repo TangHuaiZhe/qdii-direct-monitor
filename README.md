@@ -130,10 +130,32 @@ npm start
 
 - 工作日北京时间 09:10、14:30、20:30 自动更新。
 - 也可以在仓库的 Actions 页面手动运行 `Update and deploy dashboard`。
-- 网站发布 `index.html`、`latest.html` 和 `latest.json`；运行状态与历史通过 GitHub Actions 缓存保留，不进入公开仓库或网页。
+- 网站发布 `index.html`、`latest.html`、`latest.json`、`robots.txt`、`sitemap.xml` 和 `funds/<code>/index.html`；运行状态与历史通过 GitHub Actions 缓存保留，不进入公开仓库或网页。
 - 如果配置仓库密钥 `QDII_WEBHOOK_URL`，线上任务也会按现有规则发送通知；没有配置时照常更新网站。
 
 定时任务可能因 GitHub 平台负载延迟。基金公司或代销页面拒绝云端访问时，页面会显示抓取提示并按可靠性规则降级，不会把未知状态猜成开放申购。
+
+### 自动化工作原理
+
+每次定时任务或手动运行都会在 GitHub 提供的临时运行环境中执行，不依赖你的 Mac 开机：
+
+```text
+触发 GitHub Actions
+  → 安装依赖并运行 npm test
+  → npm start 抓取各适配器的数据
+  → 生成 data/latest.json、data/latest.html 和历史记录
+  → npm run build:site 生成公开网站文件
+  → 上传 site/ 并部署到 GitHub Pages
+```
+
+其中：
+
+- `src/cli.js` 负责一次完整运行，包括抓取、变化检测、通知和输出路径。
+- `src/collector.js` 负责调用基金公司直销适配器及天天基金等代销数据源。
+- `src/site.js` 把最新结果转换成首页、基金详情页、站点地图和 `robots.txt`。
+- GitHub Actions 缓存 `data/` 中的可信快照和历史，使下一次运行能够比较额度变化。
+- 测试失败时不会继续部署；单个数据源失败时会保留上一份可信值，并在页面告警中说明。
+- 运行完成后，GitHub Pages 会发布新的站点版本，通常比抓取结束晚几分钟。
 
 ## 配置基金与数据源
 
