@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { amountLabel, feeLabel, rankPurchasableFunds, reliabilityReasonLabel, renderHtml } = require("../src/report");
+const { amountLabel, feeBand, feeLabel, rankPurchasableFunds, reliabilityReasonLabel, renderHtml } = require("../src/report");
 
 function payload(overrides = {}) {
   return { observedAt: "2026-08-29T04:47:59.125Z", warnings: [], changes: [], fees: [{
@@ -39,6 +39,13 @@ test("formats USD limits independently", () => {
   assert.equal(feeLabel(0.8), "0.80%");
 });
 
+test("classifies fee color bands at the requested boundaries", () => {
+  assert.equal(feeBand(0.8).key, "low");
+  assert.equal(feeBand(0.81).key, "normal");
+  assert.equal(feeBand(1).key, "normal");
+  assert.equal(feeBand(1.01).key, "high");
+});
+
 test("localizes known reliability explanations", () => {
   assert.equal(reliabilityReasonLabel("current public agency sales page; logged-in order submission was not tested"), "当前代销公开页面，未验证登录后下单");
 });
@@ -60,4 +67,6 @@ test("HTML includes a concise purchase-convenience summary", () => {
   assert.match(html, /先按最高可信额度排序/);
   assert.match(html, /华安基金 040046/);
   assert.match(html, /年费率 0\.80%/);
+  assert.match(html, /fee-low/);
+  assert.match(html, /低费率/);
 });
