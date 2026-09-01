@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const huaan = require("../src/adapters/huaan");
 const huitianfu = require("../src/adapters/huitianfu");
 const southern = require("../src/adapters/southern");
+const tianhong = require("../src/adapters/tianhong");
 const { adapters } = require("../src/adapters");
 
 test("official adapter produces a direct observation with evidence", async () => {
@@ -52,6 +53,30 @@ test("Southern parses the latest A-share purchase limit notice", async () => {
   assert.equal(rows[0].limitAmount, 100);
 });
 
+test("Tianhong parses the official A/C share limit notice", async () => {
+  const text = "基金主代码 018043 暂停大额申购起始日 2026年04月08日 限制申购金额（单位：人民币元） 100.00 下属分级基金的交易代码 018043 018044 022525 该分级基金是否暂停大额申购 是 是 是";
+  const context = { observedAt: "2026-09-01T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => ({ bytes: Buffer.from(text), contentType: "text/html", finalUrl: url }) };
+  for (const [code, shareClass] of [["018043", "A"], ["018044", "C"]]) {
+    const rows = await tianhong.collect({ code, name: `天弘纳指${shareClass}`, manager: "天弘基金", currency: "CNY", shareClass,
+      officialSources: [{ url: "https://cdn-thweb.tianhongjijin.com.cn/fundnotice/x", kind: "notice", channel: { kind: "direct", access: "all" }, effectiveDate: "2026-04-08" }] }, context);
+    assert.equal(rows[0].status, "limited");
+    assert.equal(rows[0].limitAmount, 100);
+    assert.equal(rows[0].effectiveDate, "2026-04-08");
+    assert.equal(rows[0].reliability.grade, "B");
+  }
+});
+
+test("Tianhong page shape changes fail closed", async () => {
+  const context = { observedAt: "2026-09-01T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => ({ bytes: Buffer.from("018043 页面升级中"), contentType: "text/html", finalUrl: url }) };
+  const rows = await tianhong.collect({ code: "018043", name: "天弘纳指A", manager: "天弘基金", currency: "CNY", shareClass: "A",
+    officialSources: [{ url: "https://www.thfund.com.cn/fund/018043", kind: "product", channel: { kind: "direct", access: "web" } }] }, context);
+  assert.equal(rows[0].status, "unknown");
+  assert.equal(rows[0].limitAmount, null);
+  assert.equal(rows[0].reliability.grade, "D");
+});
+
 test("new manager adapters are registered", () => {
-  for (const id of ["guotai", "baoying", "huataipb", "ccb", "jpmorgan", "wanjia"]) assert.ok(adapters[id], id);
+  for (const id of ["guotai", "baoying", "huataipb", "ccb", "jpmorgan", "wanjia", "tianhong"]) assert.ok(adapters[id], id);
 });

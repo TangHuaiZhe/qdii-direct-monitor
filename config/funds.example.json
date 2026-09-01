@@ -176,6 +176,16 @@
         { "url": "https://www.wjasset.com/products/qdii/019441/news/report/index.html", "kind": "notice-index", "followLinks": true }
       ],
       "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "018043", "name": "天弘纳斯达克100指数发起（QDII）A", "manager": "天弘基金", "adapter": "tianhong", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://cdn-thweb.tianhongjijin.com.cn/fundnotice/e43cfbd0355ce78911df4551c2e84313.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-04-08" }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "018044", "name": "天弘纳斯达克100指数发起（QDII）C", "manager": "天弘基金", "adapter": "tianhong", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{ "url": "https://cdn-thweb.tianhongjijin.com.cn/fundnotice/e43cfbd0355ce78911df4551c2e84313.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-04-08" }],
+      "agency": { "eastmoney": true }, "manualChannels": []
     }
   ]
 }

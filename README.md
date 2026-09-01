@@ -2,13 +2,13 @@
 
 [公开监控网站](https://tanghuaizhe.github.io/qdii-direct-monitor/) · [自动更新状态](https://github.com/TangHuaiZhe/qdii-direct-monitor/actions/workflows/pages.yml)
 
-一个“直销优先、代销补充”的国内纳斯达克 100 QDII 申购限额与费率监控器。项目默认覆盖嘉实、易方达、汇添富、博时、招商、广发、华安、大成、南方、国泰、宝盈、华泰柏瑞、建信、摩根和万家，共 26 个基金份额，并把每一条额度和费率绑定到明确的证据与可靠性等级。
+一个“直销优先、代销补充”的国内纳斯达克 100 QDII 申购限额与费率监控器。项目默认覆盖嘉实、易方达、汇添富、博时、招商、广发、华安、大成、南方、国泰、宝盈、华泰柏瑞、建信、摩根、万家和天弘，共 28 个基金份额，并把每一条额度和费率绑定到明确的证据与可靠性等级。
 
 > 重要：基金公司 APP 和登录后的网上交易通常没有稳定公开接口。本项目不会把网页抓取等同于真实下单验证；解析失败时输出 `unknown`，不会猜测为开放申购。
 
 ## 已实现能力
 
-- 十五个独立的基金公司 adapter，分别维护域名白名单和默认公开入口。
+- 十六个独立的基金公司 adapter，分别维护域名白名单和默认公开入口。
 - 回退链：官方产品页 → 官方公告列表/HTML/PDF 公告 → 明确标记为未知。
 - 代销侧默认读取天天基金公开销售页；支付宝、银行、券商支持短期人工核验记录。
 - 自动读取管理费率、托管费率和销售服务费率，计算可横向比较的年综合费率。
@@ -175,7 +175,7 @@ iCloud 邮箱必须使用“App 专用密码”，不要使用 Apple ID 主密�
 
 每只基金至少需要 `code`、`name`、`manager`、`adapter`。适配器名称为：
 
-`jiashi`、`efunds`、`huitianfu`、`bosera`、`cmf`、`gf`、`huaan`、`dacheng`、`southern`、`guotai`、`baoying`、`huataipb`、`ccb`、`jpmorgan`、`wanjia`。
+`jiashi`、`efunds`、`huitianfu`、`bosera`、`cmf`、`gf`、`huaan`、`dacheng`、`southern`、`guotai`、`baoying`、`huataipb`、`ccb`、`jpmorgan`、`wanjia`、`tianhong`。
 
 南方默认监控场外基金 `016452`（南方纳斯达克100指数发起 QDII A）。场内 ETF `159659` 主要通过证券交易所买卖，其一级市场申购赎回单位与场外基金每日人民币购买限额不是同一种指标，因此不混入本看板。
 
