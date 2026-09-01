@@ -26,6 +26,8 @@ test("renders a self-contained Chinese HTML report", () => {
   assert.match(html, /综合费率从低到高/);
   assert.match(html, /og:image/);
   assert.match(html, /qdii-direct-monitor\/og\.png/);
+  assert.match(html, /--primary:#b4232f/);
+  assert.match(html, /linear-gradient\(135deg,#7f1420,#b4232f 72%,#cf4450\)/);
 });
 
 test("escapes untrusted source data", () => {
@@ -77,4 +79,5 @@ test("renders an indexable fund detail page", () => {
   assert.match(html, /rel="canonical"/);
   assert.match(html, /application\/ld\+json/);
   assert.match(html, /最高可信直销额度/);
+  assert.match(html, /--primary:#b4232f/);
 });
