@@ -30,6 +30,13 @@ test("renders a self-contained Chinese HTML report", () => {
   assert.match(html, /linear-gradient\(135deg,#7f1420,#b4232f 72%,#cf4450\)/);
   assert.match(html, /id="refresh-page"/);
   assert.match(html, /window\.location\.reload\(\)/);
+  assert.match(html, /data-column-sort="agency"/);
+  assert.match(html, /data-column-sort="direct"/);
+  assert.match(html, /data-column-sort="fee"/);
+  assert.match(html, /id="reset-table-sort"/);
+  assert.match(html, /data-agency-amount=""/);
+  assert.match(html, /data-direct-amount="100"/);
+  assert.match(html, /columnSort\.direction \* -1/);
   assert.match(html, /placeholder="搜索名称、代码、公司或拼音"/);
   assert.match(html, /data-search="[^"]*huaan[^"]*hajj/);
 });
