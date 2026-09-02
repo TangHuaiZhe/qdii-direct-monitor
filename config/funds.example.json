@@ -18,8 +18,8 @@
     {
       "code": "018966", "name": "汇添富纳斯达克100ETF发起式联接（QDII）人民币A", "manager": "汇添富基金", "adapter": "huitianfu", "currency": "CNY", "shareClass": "A",
       "officialSources": [
-        { "url": "https://www.99fund.com/announcement/zx/upload/2026/20260716/ecd854ee54854a1f8841b03de46ef33e.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-07-17" },
-        { "url": "https://www.99fund.com/main/products/pofund/018966/fundgg.shtml", "kind": "notice-index", "followLinks": true }
+        { "url": "https://www.99fund.com/main/products/pofund/018966/fundgg.shtml", "kind": "notice-index", "followLinks": true },
+        { "url": "https://www.99fund.com/announcement/zx/upload/2026/20260901/6f277a27573d4ba5928dd548007e1a09.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-09-02" }
       ],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
@@ -90,16 +90,16 @@
     {
       "code": "018967", "name": "汇添富纳斯达克100ETF发起式联接（QDII）人民币C", "manager": "汇添富基金", "adapter": "huitianfu", "currency": "CNY", "shareClass": "C",
       "officialSources": [
-        { "url": "https://www.99fund.com/announcement/zx/upload/2026/20260716/ecd854ee54854a1f8841b03de46ef33e.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-07-17" },
-        { "url": "https://www.99fund.com/main/products/pofund/018967/fundgg.shtml", "kind": "notice-index", "followLinks": true }
+        { "url": "https://www.99fund.com/main/products/pofund/018967/fundgg.shtml", "kind": "notice-index", "followLinks": true },
+        { "url": "https://www.99fund.com/announcement/zx/upload/2026/20260901/6f277a27573d4ba5928dd548007e1a09.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-09-02" }
       ],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {
       "code": "021773", "name": "汇添富纳斯达克100ETF发起式联接（QDII）人民币E", "manager": "汇添富基金", "adapter": "huitianfu", "currency": "CNY", "shareClass": "E",
       "officialSources": [
-        { "url": "https://www.99fund.com/announcement/zx/upload/2026/20260716/ecd854ee54854a1f8841b03de46ef33e.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-07-17" },
-        { "url": "https://www.99fund.com/main/products/pofund/021773/fundgg.shtml", "kind": "notice-index", "followLinks": true }
+        { "url": "https://www.99fund.com/main/products/pofund/021773/fundgg.shtml", "kind": "notice-index", "followLinks": true },
+        { "url": "https://www.99fund.com/announcement/zx/upload/2026/20260901/6f277a27573d4ba5928dd548007e1a09.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-09-02" }
       ],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
