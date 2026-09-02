@@ -35,13 +35,16 @@ test("one notice can explicitly cover web, app, and counter direct channels", as
   assert.ok(rows.every((row) => row.limitAmount === 100 && row.reliability.grade === "B"));
 });
 
-test("Huitianfu uses the current share-table value instead of an older amount mentioned later", async () => {
+test("Huitianfu uses the current A/E share-table values instead of an older amount mentioned later", async () => {
   const text = "基金主代码 018966 下属基金份额的交易代码 018966 018967 018969 018968 021773 下属基金份额的限制申购金额 10.00 10.00 2.00 2.00 10.00 注：此前限制金额为50人民币元 暂停大额申购";
   const context = { observedAt: "2026-08-29T00:00:00Z", warnings: [], timeoutMs: 10,
     fetchResource: async (url) => ({ bytes: Buffer.from(text), contentType: "text/html", finalUrl: url }) };
-  const rows = await huitianfu.collect({ code: "018966", name: "汇添富纳指", manager: "汇添富基金", currency: "CNY", officialSources: [{ url: "https://www.99fund.com/x", kind: "notice", channel: { kind: "direct", access: "all" } }] }, context);
-  assert.equal(rows[0].status, "limited");
-  assert.equal(rows[0].limitAmount, 10);
+  for (const [code, shareClass] of [["018966", "A"], ["021773", "E"]]) {
+    const rows = await huitianfu.collect({ code, name: `汇添富纳指${shareClass}`, manager: "汇添富基金", currency: "CNY", shareClass,
+      officialSources: [{ url: "https://www.99fund.com/x", kind: "notice", channel: { kind: "direct", access: "all" } }] }, context);
+    assert.equal(rows[0].status, "limited");
+    assert.equal(rows[0].limitAmount, 10);
+  }
 });
 
 test("Southern parses the latest A-share purchase limit notice", async () => {

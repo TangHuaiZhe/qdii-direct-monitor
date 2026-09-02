@@ -96,6 +96,14 @@
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {
+      "code": "021773", "name": "汇添富纳斯达克100ETF发起式联接（QDII）人民币E", "manager": "汇添富基金", "adapter": "huitianfu", "currency": "CNY", "shareClass": "E",
+      "officialSources": [
+        { "url": "https://www.99fund.com/announcement/zx/upload/2026/20260716/ecd854ee54854a1f8841b03de46ef33e.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-07-17" },
+        { "url": "https://www.99fund.com/main/products/pofund/021773/fundgg.shtml", "kind": "notice-index", "followLinks": true }
+      ],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
       "code": "016453", "name": "南方纳斯达克100指数发起（QDII）C", "manager": "南方基金", "adapter": "southern", "currency": "CNY", "shareClass": "C",
       "officialSources": [
         { "url": "https://www.nffund.com/main/files/2025/11/19/369909084677.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2025-11-20" },
