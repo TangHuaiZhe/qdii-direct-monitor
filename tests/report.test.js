@@ -99,4 +99,7 @@ test("renders an indexable fund detail page", () => {
   assert.match(html, /application\/ld\+json/);
   assert.match(html, /最高可信直销额度/);
   assert.match(html, /--primary:#b4232f/);
+  assert.match(html, /class="fee-metric"/);
+  assert.match(html, /\.metric \.fee-metric\{[^}]*background:#fff/);
+  assert.match(html, /\.metric span\{color:#f6dfe2/);
 });
