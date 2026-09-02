@@ -30,6 +30,13 @@ test("renders a self-contained Chinese HTML report", () => {
   assert.match(html, /linear-gradient\(135deg,#7f1420,#b4232f 72%,#cf4450\)/);
 });
 
+test("renders the responsive market-terminal design", () => {
+  const html = renderHtml(payload());
+  assert.match(html, /NASDAQ 100 · 场外份额监控/);
+  assert.match(html, /class="market-rail"/);
+  assert.match(html, /prefers-reduced-motion/);
+});
+
 test("escapes untrusted source data", () => {
   const html = renderHtml(payload({ rows: [{ ...payload().rows[0], fundName: "<script>alert(1)</script>" }] }));
   assert.doesNotMatch(html, /<script>alert/);
