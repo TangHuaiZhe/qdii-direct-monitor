@@ -40,6 +40,8 @@ test("renders a self-contained Chinese HTML report", () => {
   assert.match(html, /columnSort = null; sort\.value = "amount"/);
   assert.match(html, /placeholder="搜索名称、代码、公司或拼音"/);
   assert.match(html, /data-search="[^"]*huaan[^"]*hajj/);
+  assert.match(html, /class="index-chip manager-tone-\d" aria-hidden="true">华<\/span>/);
+  assert.match(html, /\.manager-tone-5\{background:#f7e6df;color:#8a4933\}/);
 });
 
 test("renders the responsive market-terminal design", () => {
