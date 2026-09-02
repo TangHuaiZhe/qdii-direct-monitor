@@ -1,5 +1,7 @@
 "use strict";
 
+const { buildSearchText } = require("../miniapp/utils/pinyin");
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
@@ -129,7 +131,7 @@ function fundTableRow(code, rows, fee) {
   const best = rankPurchasableFunds(rows)[0] || null;
   const status = aggregateStatus(rows);
   const bestAmount = best?.status === "open" ? Number.MAX_SAFE_INTEGER : (best?.limitAmount || 0);
-  const search = `${fund.fundName} ${fund.manager} ${code}`.toLowerCase();
+  const search = buildSearchText(fund.fundName, fund.manager, code);
   return `<tr class="fund-row" data-search="${escapeHtml(search)}" data-share="${escapeHtml(fund.shareClass || "其他")}" data-status="${escapeHtml(status)}" data-purchasable="${best ? "1" : "0"}" data-amount="${bestAmount}" data-fee="${Number.isFinite(fee?.annualRate) ? fee.annualRate : 999}"><td class="fund-cell"><span class="index-chip">NDX</span><div><strong><a class="fund-link" href="funds/${escapeHtml(code)}/">${escapeHtml(fund.fundName)}</a></strong><span>${escapeHtml(code)} · ${escapeHtml(fund.manager)} · ${escapeHtml(fund.shareClass || "其他")} 类</span></div></td>${channelCell(agency)}${channelCell(direct)}${feeCell(fee)}</tr>`;
 }
 
@@ -187,7 +189,7 @@ function renderHtml(payload) {
 ${purchaseSummaryHtml(payload.rows || [], payload.fees || [])}
 <div class="notices">${warnings ? `<details class="notice"><summary>抓取提示（${(payload.warnings || []).length}）</summary><ul>${warnings}</ul></details>` : ""}${changes ? `<details class="notice"><summary>本次额度变化（${(payload.changes || []).length}）</summary><ul>${changes}</ul></details>` : ""}</div>
 <section class="panel"><div class="panel-head"><div><h2>基金列表</h2><p>代销、直销和年综合费率横向比较</p></div><span class="result-count"><b id="visible-count">${grouped.size}</b> 只</span></div>
-<div class="filters"><label class="search"><input id="fund-search" type="search" placeholder="搜索基金名称、代码或公司" aria-label="搜索基金"></label><div class="share-filters" aria-label="份额类别"><button class="filter-button active" type="button" data-share-filter="全部">全部</button>${shareClasses.map((share) => `<button class="filter-button" type="button" data-share-filter="${escapeHtml(share)}">${escapeHtml(share)} 类</button>`).join("")}</div><label class="toggle"><input id="purchasable-only" type="checkbox">仅看可购买</label><select id="fund-sort" class="sort" aria-label="排序方式"><option value="amount">额度从高到低</option><option value="fee">综合费率从低到高</option><option value="name">基金名称</option></select></div>
+<div class="filters"><label class="search"><input id="fund-search" type="search" placeholder="搜索名称、代码、公司或拼音" aria-label="搜索基金"></label><div class="share-filters" aria-label="份额类别"><button class="filter-button active" type="button" data-share-filter="全部">全部</button>${shareClasses.map((share) => `<button class="filter-button" type="button" data-share-filter="${escapeHtml(share)}">${escapeHtml(share)} 类</button>`).join("")}</div><label class="toggle"><input id="purchasable-only" type="checkbox">仅看可购买</label><select id="fund-sort" class="sort" aria-label="排序方式"><option value="amount">额度从高到低</option><option value="fee">综合费率从低到高</option><option value="name">基金名称</option></select></div>
 <div class="table-wrap"><table><thead><tr><th>基金</th><th>代销渠道</th><th>直销渠道</th><th>年综合费率 ⓘ</th></tr></thead><tbody id="fund-body">${funds.map(([code, rows]) => fundTableRow(code, rows, feeByFund.get(code))).join("")}</tbody></table><div id="empty" class="empty">没有符合当前条件的基金</div></div></section>
 <p class="method"><strong>综合费率口径：</strong>管理费率＋托管费率＋销售服务费率，均为按年计提；<span class="fee-text-low">≤0.80% 为低费率</span>，<span class="fee-text-normal">&gt;0.80% 且 ≤1.00% 为正常</span>，<span class="fee-text-high">&gt;1.00% 为高费率</span>。基金净值通常已扣除这些费用。申购费和赎回费受渠道折扣、金额及持有期影响，不并入本列。不同基金份额或渠道额度不得相加。</p>
 <p class="footer">A/B/C/D 表示证据可靠性，不代表投资风险等级。未知状态不可视为开放申购。数据仅供核验，不构成投资建议。</p>
@@ -195,7 +197,7 @@ ${purchaseSummaryHtml(payload.rows || [], payload.fees || [])}
 (() => {
   document.getElementById("refresh-page").addEventListener("click", () => window.location.reload());
   const body = document.getElementById("fund-body"); const rows = [...body.querySelectorAll(".fund-row")]; const search = document.getElementById("fund-search"); const purchasable = document.getElementById("purchasable-only"); const sort = document.getElementById("fund-sort"); const count = document.getElementById("visible-count"); const empty = document.getElementById("empty"); let share = "全部";
-  function refresh() { const query = search.value.trim().toLowerCase(); const visible = rows.filter((row) => (!query || row.dataset.search.includes(query)) && (share === "全部" || row.dataset.share === share) && (!purchasable.checked || row.dataset.purchasable === "1")); const key = sort.value; visible.sort((a, b) => key === "fee" ? Number(a.dataset.fee) - Number(b.dataset.fee) || a.dataset.search.localeCompare(b.dataset.search, "zh-CN") : key === "name" ? a.dataset.search.localeCompare(b.dataset.search, "zh-CN") : Number(b.dataset.amount) - Number(a.dataset.amount) || Number(a.dataset.fee) - Number(b.dataset.fee)); const visibleSet = new Set(visible); rows.forEach((row) => { row.hidden = !visibleSet.has(row); }); visible.forEach((row) => body.appendChild(row)); count.textContent = String(visible.length); empty.style.display = visible.length ? "none" : "block"; }
+  function refresh() { const query = search.value.trim().toLowerCase().replace(/[^a-z0-9\\u3400-\\u9fff]+/g, ""); const visible = rows.filter((row) => (!query || row.dataset.search.includes(query)) && (share === "全部" || row.dataset.share === share) && (!purchasable.checked || row.dataset.purchasable === "1")); const key = sort.value; visible.sort((a, b) => key === "fee" ? Number(a.dataset.fee) - Number(b.dataset.fee) || a.dataset.search.localeCompare(b.dataset.search, "zh-CN") : key === "name" ? a.dataset.search.localeCompare(b.dataset.search, "zh-CN") : Number(b.dataset.amount) - Number(a.dataset.amount) || Number(a.dataset.fee) - Number(b.dataset.fee)); const visibleSet = new Set(visible); rows.forEach((row) => { row.hidden = !visibleSet.has(row); }); visible.forEach((row) => body.appendChild(row)); count.textContent = String(visible.length); empty.style.display = visible.length ? "none" : "block"; }
   document.querySelectorAll("[data-share-filter]").forEach((button) => button.addEventListener("click", () => { share = button.dataset.shareFilter; document.querySelectorAll("[data-share-filter]").forEach((item) => item.classList.toggle("active", item === button)); refresh(); })); search.addEventListener("input", refresh); purchasable.addEventListener("change", refresh); sort.addEventListener("change", refresh); refresh();
 })();
 </script></body></html>\n`;

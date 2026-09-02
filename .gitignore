@@ -1,5 +1,8 @@
 node_modules/
 data/
 site/
+.DS_Store
+.playwright-cli/
+output/
 .env
 config/funds.local.json

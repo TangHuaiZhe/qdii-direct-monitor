@@ -1,0 +1,84 @@
+<view class="page">
+  <view class="hero">
+    <view class="hero-top">
+      <text class="eyebrow">直销优先 · 代销补充</text>
+      <button class="about" bindtap="openAbout">说明</button>
+    </view>
+    <view class="title">纳指 QDII 额度监控</view>
+    <view class="subtitle">每条结果都绑定基金份额、销售入口、证据来源和可靠性等级</view>
+    <view class="updated">数据时间 {{observedAt || '读取中…'}} · {{originMessage}}</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">
+    <view class="loading-dot"></view>
+    <text>正在读取最新公开数据</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="state-card error-card">
+    <text class="state-title">暂时无法获取数据</text>
+    <text class="state-copy">{{error}}</text>
+    <button class="retry" bindtap="retry">重新加载</button>
+  </view>
+
+  <block wx:else>
+    <view class="stats">
+      <view class="stat"><text class="stat-value">{{totalCount}}</text><text>基金份额</text></view>
+      <view class="stat"><text class="stat-value green">{{purchasableCount}}</text><text>有可信可用渠道</text></view>
+    </view>
+
+    <view wx:if="{{healthWarning || warningCount}}" class="warning">
+      <view class="warning-title">采集提示{{warningCount ? ' · ' + warningCount + ' 条' : ''}}</view>
+      <view wx:if="{{healthWarning}}">{{healthWarning}}</view>
+      <view wx:for="{{warnings}}" wx:key="*this" class="warning-item">{{item}}</view>
+    </view>
+
+    <view class="filters">
+      <view class="search-wrap">
+        <text class="search-icon">⌕</text>
+        <input class="search" placeholder="搜索名称、代码、公司或拼音" value="{{query}}" bindinput="onSearch" confirm-type="search" />
+      </view>
+      <scroll-view class="chips" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="chip-row">
+          <button class="chip {{shareClass === '全部' ? 'active' : ''}}" data-value="全部" bindtap="onShareClass">全部</button>
+          <button class="chip {{shareClass === 'A' ? 'active' : ''}}" data-value="A" bindtap="onShareClass">A 类</button>
+          <button class="chip {{shareClass === 'C' ? 'active' : ''}}" data-value="C" bindtap="onShareClass">C 类</button>
+        </view>
+      </scroll-view>
+      <view class="filter-row">
+        <label class="toggle"><switch checked="{{purchasableOnly}}" bindchange="onPurchasableChange" color="#137552" />仅看可购买</label>
+        <picker mode="selector" range="{{sortLabels}}" value="{{sortIndex}}" bindchange="onSortChange">
+          <view class="sort-picker">{{sortLabels[sortIndex]}}⌄</view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="result-head"><text>筛选结果</text><text>{{visibleFunds.length}} 只</text></view>
+    <view wx:if="{{!visibleFunds.length}}" class="empty">没有符合当前条件的基金</view>
+
+    <view wx:for="{{visibleFunds}}" wx:key="code" class="fund-card" data-code="{{item.code}}" bindtap="openFund" hover-class="fund-card-hover">
+      <view class="fund-head">
+        <view class="fund-identity">
+          <text class="index-chip">NDX</text>
+          <view>
+            <view class="fund-name">{{item.name}}</view>
+            <view class="fund-meta">{{item.code}} · {{item.manager}} · {{item.shareClass}} 类</view>
+          </view>
+        </view>
+        <text class="status {{item.statusClass}}">{{item.statusLabel}}</text>
+      </view>
+      <view class="best-line">
+        <view><text class="label">最高可信可用渠道</text><text class="channel">{{item.bestChannelLabel}}</text></view>
+        <text class="best-amount">{{item.bestAmountLabel}}</text>
+      </view>
+      <view class="metrics">
+        <view class="metric"><text>直销</text><text class="metric-value">{{item.directAmountLabel}}</text><text class="grade">{{item.directGrade}} 级</text></view>
+        <view class="metric"><text>代销</text><text class="metric-value">{{item.agencyAmountLabel}}</text><text class="grade">{{item.agencyGrade}} 级</text></view>
+        <view class="metric"><text>年综合费率</text><text class="metric-value fee-{{item.fee ? item.fee.band : 'unknown'}}">{{item.fee ? item.fee.annualLabel : '待核验'}}</text><text class="grade">{{item.fee ? item.fee.grade + ' 级' : '—'}}</text></view>
+      </view>
+      <view class="card-foot">查看全部渠道与证据 <text>›</text></view>
+    </view>
+
+    <view class="disclaimer">页面展示公开规则与公开销售入口，不代表登录后的真实下单验证。不同渠道额度不会相加。数据仅供核验，不构成投资建议。</view>
+  </block>
+  <view class="safe-bottom"></view>
+</view>

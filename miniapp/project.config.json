@@ -1,0 +1,25 @@
+{
+  "description": "纳指 QDII 申购额度监控微信小程序",
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "assets"
+      }
+    ]
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "compileHotReLoad": true,
+    "postcss": true,
+    "minified": true,
+    "minifyWXML": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.15.2",
+  "appid": "wxd4e83fe6610fb7e4",
+  "projectname": "qdii-direct-monitor",
+  "miniprogramRoot": "./"
+}

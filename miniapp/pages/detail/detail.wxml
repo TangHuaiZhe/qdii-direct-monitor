@@ -1,0 +1,51 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state">正在读取基金详情…</view>
+  <view wx:elif="{{error}}" class="state error">{{error}}</view>
+  <block wx:else>
+    <view class="hero">
+      <text class="code">{{fund.code}}</text>
+      <view class="name">{{fund.name}}</view>
+      <view class="meta">{{fund.manager}} · {{fund.shareClass}} 类 · {{observedAt}}</view>
+      <view class="hero-metrics">
+        <view><text class="hero-value">{{fund.directAmountLabel}}</text><text>最高可信直销展示</text></view>
+        <view><text class="hero-value">{{fund.agencyAmountLabel}}</text><text>最高可信代销展示</text></view>
+        <view><text class="hero-value">{{fund.fee ? fund.fee.annualLabel : '待核验'}}</text><text>年综合费率</text></view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="section-title">渠道与证据</view>
+      <view class="hint">每行只代表一个销售入口；额度不会跨渠道相加。</view>
+      <view wx:for="{{fund.observations}}" wx:key="key" class="observation">
+        <view class="observation-head">
+          <view><text class="relation">{{item.relationLabel}}</text><text class="channel">{{item.channelLabel}}</text></view>
+          <text class="status {{item.statusClass}}">{{item.statusLabel}}</text>
+        </view>
+        <view class="amount">{{item.amountLabel}}</view>
+        <view class="evidence">
+          <text class="grade {{item.gradeClass}}">{{item.grade}} 级</text>
+          <text class="reason">{{item.reliabilityReason}}</text>
+        </view>
+        <view wx:if="{{item.notesText}}" class="notes">{{item.notesText}}</view>
+        <button wx:if="{{item.source && item.source.url}}" class="source" data-url="{{item.source.url}}" bindtap="copySource">复制证据链接 · {{item.sourceHost}}</button>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="section-title">费率拆分</view>
+      <block wx:if="{{fund.fee}}">
+        <view class="fee-total"><text>年综合费率</text><text class="fee-value fee-{{fund.fee.band}}">{{fund.fee.annualLabel}}</text><text class="fee-tag fee-tag-{{fund.fee.band}}">{{fund.fee.bandLabel}}</text></view>
+        <view class="fee-grid">
+          <view><text>{{fund.fee.managementLabel}}</text><text>管理费</text></view>
+          <view><text>{{fund.fee.custodyLabel}}</text><text>托管费</text></view>
+          <view><text>{{fund.fee.salesServiceLabel}}</text><text>销售服务费</text></view>
+        </view>
+        <button wx:if="{{fund.fee.source && fund.fee.source.url}}" class="source" data-url="{{fund.fee.source.url}}" bindtap="copySource">复制费率来源 · {{fund.fee.sourceHost}}</button>
+      </block>
+      <view wx:else class="hint">费率暂待核验。</view>
+    </view>
+
+    <view class="disclaimer">官方公告描述的是公开规则，不等同于基金公司 APP 或其他登录入口的真实下单验证。综合费率不包含随渠道、金额和持有期变化的申购费与赎回费。数据仅供核验，不构成投资建议。</view>
+  </block>
+  <view class="safe-bottom"></view>
+</view>

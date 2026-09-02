@@ -11,6 +11,7 @@
   "scripts": {
     "start": "node src/cli.js run --config config/funds.example.json",
     "build:site": "node src/site.js",
+    "check:miniapp": "node scripts/check-miniapp.js",
     "watch": "node src/cli.js watch --config config/funds.example.json",
     "test": "node --test"
   },
