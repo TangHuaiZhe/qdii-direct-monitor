@@ -83,3 +83,27 @@ test("Tianhong page shape changes fail closed", async () => {
 test("new manager adapters are registered", () => {
   for (const id of ["guotai", "baoying", "huataipb", "ccb", "jpmorgan", "wanjia", "tianhong"]) assert.ok(adapters[id], id);
 });
+
+test("config tracks 广发美元A Nasdaq-100 share 000055", () => {
+  const config = require("../config/funds.example.json");
+  const fund = config.funds.find((item) => item.code === "000055");
+  assert.deepEqual(fund && {
+    name: fund.name,
+    manager: fund.manager,
+    adapter: fund.adapter,
+    currency: fund.currency,
+    shareClass: fund.shareClass,
+    source: fund.officialSources[0]
+  }, {
+    name: "广发纳指100ETF联接（QDII）美元A",
+    manager: "广发基金",
+    adapter: "gf",
+    currency: "USD",
+    shareClass: "A",
+    source: {
+      url: "https://www.gffunds.com.cn/funds/?fundcode=000055",
+      kind: "product",
+      channel: { kind: "direct", access: "all" }
+    }
+  });
+});

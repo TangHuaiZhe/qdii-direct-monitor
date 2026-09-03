@@ -42,6 +42,11 @@
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {
+      "code": "000055", "name": "广发纳指100ETF联接（QDII）美元A", "manager": "广发基金", "adapter": "gf", "currency": "USD", "shareClass": "A",
+      "officialSources": [{ "url": "https://www.gffunds.com.cn/funds/?fundcode=000055", "kind": "product", "channel": { "kind": "direct", "access": "all" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
       "code": "040046", "name": "华安纳斯达克100ETF联接（QDII）A", "manager": "华安基金", "adapter": "huaan", "currency": "CNY", "shareClass": "A",
       "officialSources": [{ "url": "https://www.huaan.com.cn/funds/040046/index.shtml", "kind": "product", "channel": { "kind": "direct", "access": "all" }, "followLinks": true }],
       "agency": { "eastmoney": true }, "manualChannels": []

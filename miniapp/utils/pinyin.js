@@ -7,7 +7,7 @@ const PINYIN = {
   时: "shi", 招: "zhao", 商: "shang", 广: "guang", 华: "hua", 安: "an", 大: "da",
   成: "cheng", 南: "nan", 指: "zhi", 数: "shu", 国: "guo", 泰: "tai", 宝: "bao",
   盈: "ying", 柏: "bai", 瑞: "rui", 建: "jian", 信: "xin", 摩: "mo", 根: "gen",
-  万: "wan", 家: "jia", 天: "tian", 弘: "hong"
+  万: "wan", 家: "jia", 天: "tian", 弘: "hong", 美: "mei", 元: "yuan"
 };
 
 function compact(value) {
