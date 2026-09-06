@@ -14,6 +14,22 @@
     </view>
 
     <view class="card">
+      <view class="section-title">十大持仓股</view>
+      <block wx:if="{{fund.holding}}">
+        <view class="hint">{{fund.holding.scopeLabel}} · 报告期 {{fund.holding.asOf}}</view>
+        <view class="holding-head"><text>股票</text><text>{{fund.holding.weightHeading}}</text></view>
+        <view wx:for="{{fund.holding.items}}" wx:key="code" class="holding-row">
+          <text class="holding-rank">{{item.rank}}</text>
+          <view class="holding-name"><text>{{item.name}}</text><text>{{item.code}} · {{item.market}}</text></view>
+          <text class="holding-weight">{{item.weightLabel}}</text>
+        </view>
+        <view class="evidence holding-evidence"><text class="grade {{fund.holding.gradeClass}}">{{fund.holding.grade}} 级</text><text class="reason">季度末快照；穿透比例未经联接基金 ETF 仓位折算</text></view>
+        <button wx:if="{{fund.holding.source && fund.holding.source.url}}" class="source" data-url="{{fund.holding.source.url}}" bindtap="copySource">复制持仓来源 · {{fund.holding.sourceHost}}</button>
+      </block>
+      <view wx:else class="hint">最新持仓暂待核验。</view>
+    </view>
+
+    <view class="card">
       <view class="section-title">渠道与证据</view>
       <view class="hint">每行只代表一个销售入口；额度不会跨渠道相加。</view>
       <view wx:for="{{fund.observations}}" wx:key="key" class="observation">

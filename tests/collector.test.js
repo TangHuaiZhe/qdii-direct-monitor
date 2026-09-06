@@ -36,12 +36,32 @@ test("D-grade fee failure reuses the last trusted fee snapshot", () => {
   assert.equal(after.fees[0].annualRate, 0.8);
 });
 
-test("collector runs with an injected official source and no persistence", async () => {
-  const config = { notifications: {}, funds: [{ code: "040046", name: "华安纳指", manager: "华安基金", adapter: "huaan", currency: "CNY", officialSources: [{ url: "https://www.huaan.com.cn/x", kind: "product" }], agency: { eastmoney: false } }] };
-  const fetchResource = async (url) => ({ bytes: Buffer.from(url.includes("jjfl_") ? "管理费率 0.60% 托管费率 0.20% 销售服务费率 0.00%" : "040046 单日单账户限额直销100元 限额申购"), contentType: "text/html", finalUrl: url });
+test("D-grade holdings failure reuses the last trusted holdings snapshot", () => {
+  const baseRow = { fundCode: "040046", fundName: "x", manager: "x", currency: "CNY", channel: { kind: "direct", access: "web" }, status: "limited", limitAmount: 100, observedAt: "a", reliability: { grade: "A", reason: "official" } };
+  const trusted = { fundCode: "040046", portfolioCode: "华安纳指ETF", sourceCode: "159632", exposure: "look-through", asOf: "2026-06-30", items: [{ rank: 1, code: "NVDA", name: "英伟达", market: "美股", weight: 7 }], reliability: { grade: "B" } };
+  const failed = { ...trusted, asOf: null, items: [], reliability: { grade: "D" } };
+  const before = buildSnapshot("a", [baseRow], [], [trusted]);
+  const after = stableSnapshot("b", [baseRow], before, [], [failed]);
+  assert.equal(after.holdings[0].asOf, "2026-06-30");
+  assert.equal(after.holdings[0].items[0].code, "NVDA");
+});
+
+test("first-seen D-grade fee and holdings records remain explicit unknowns", () => {
+  const baseRow = { fundCode: "040046", fundName: "x", manager: "x", currency: "CNY", channel: { kind: "direct", access: "web" }, status: "limited", limitAmount: 100, observedAt: "a", reliability: { grade: "A", reason: "official" } };
+  const failedFee = { fundCode: "040046", annualRate: null, reliability: { grade: "D" } };
+  const failedHolding = { fundCode: "040046", portfolioCode: "040046", items: [], reliability: { grade: "D" } };
+  const after = stableSnapshot("b", [baseRow], buildSnapshot("a", [baseRow]), [failedFee], [failedHolding]);
+  assert.equal(after.fees[0], failedFee);
+  assert.equal(after.holdings[0], failedHolding);
+});
+
+test("collector runs with injected sources and no persistence", async () => {
+  const config = { notifications: {}, portfolioMappings: { "040046": { portfolioCode: "华安纳指ETF", sourceCode: "159632", exposure: "look-through" } }, funds: [{ code: "040046", name: "华安纳指", manager: "华安基金", adapter: "huaan", currency: "CNY", officialSources: [{ url: "https://www.huaan.com.cn/x", kind: "product" }], agency: { eastmoney: false } }] };
+  const fetchResource = async (url) => ({ bytes: Buffer.from(url.includes("jjfl_") ? "管理费率 0.60% 托管费率 0.20% 销售服务费率 0.00%" : url.includes("danjuanapp.com") ? JSON.stringify({ result_code: 0, data: { source: "2026-06-30", stock_list: [{ name: "英伟达", code: "NVDA", percent: 7 }] } }) : "040046 单日单账户限额直销100元 限额申购"), contentType: url.includes("danjuanapp.com") ? "application/json" : "text/html", finalUrl: url });
   const result = await run(config, { observedAt: "2026-08-29T00:00:00Z", fetchResource, save: false, baseDir: path.join(os.tmpdir(), `qdii-test-${process.pid}`) });
   assert.equal(result.rows.length, 1);
   assert.equal(result.rows[0].limitAmount, 100);
   assert.equal(result.fees[0].annualRate, 0.8);
+  assert.equal(result.holdings[0].items[0].code, "NVDA");
   assert.equal(result.notification.reason, "no-changes");
 });

@@ -54,6 +54,17 @@ test("miniapp keeps direct and agency displays separate", () => {
   assert.equal(funds[0].agencyAmountLabel, "10 元");
 });
 
+test("miniapp decorates report-period look-through holdings", () => {
+  const funds = buildFunds({ rows: [row()], fees: [], holdings: [{
+    fundCode: "040046", sourceCode: "159632", exposure: "look-through", asOf: "2026-06-30",
+    items: [{ rank: 1, code: "NVDA", name: "英伟达", market: "美股", weight: 7 }],
+    reliability: { grade: "B" }, source: { url: "https://danjuanapp.com/holdings" }
+  }] });
+  assert.equal(funds[0].holding.scopeLabel, "目标 ETF 159632 穿透持仓");
+  assert.equal(funds[0].holding.weightHeading, "占目标ETF净值");
+  assert.equal(funds[0].holding.items[0].weightLabel, "7.00%");
+});
+
 test("miniapp localizes known reliability explanations", () => {
   assert.equal(
     reliabilityReasonLabel("current public agency sales page; logged-in order submission was not tested"),

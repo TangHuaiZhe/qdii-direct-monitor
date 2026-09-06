@@ -152,7 +152,18 @@ function jsonLd(value) {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
-function renderFundHtml(payload, code, baseUrl = "https://tanghuaizhe.github.io/qdii-direct-monitor/") {
+function holdingsSectionHtml(holding) {
+  if (!holding || holding.reliability?.grade === "D" || !holding.items?.length) {
+    return `<section class="card"><h2>十大持仓股</h2><p>最新持仓暂待核验。</p></section>`;
+  }
+  const grade = holding.reliability?.grade || "D";
+  const scope = holding.exposure === "look-through" ? `目标 ETF ${holding.sourceCode} 穿透持仓` : "本基金直接披露持仓";
+  const weightHeading = holding.exposure === "look-through" ? "占目标 ETF 净值" : "占基金净值";
+  const rows = holding.items.map((item) => `<tr><td>${escapeHtml(item.rank)}</td><td><strong>${escapeHtml(item.name)}</strong></td><td>${escapeHtml(item.code)}</td><td>${escapeHtml(item.market)}</td><td><strong>${escapeHtml(Number(item.weight).toFixed(2))}%</strong></td></tr>`).join("");
+  return `<section class="card"><h2>十大持仓股</h2><p class="muted">${escapeHtml(scope)} · 报告期 ${escapeHtml(holding.asOf)} · <span class="grade grade-${escapeHtml(grade)}">${escapeHtml(grade)}</span> ${safeSourceLink(holding.source, "查看持仓来源")}</p><p class="muted">持仓为报告期末快照，不代表当前实时仓位；联接基金展示目标 ETF 的穿透持仓，比例未经联接基金 ETF 仓位折算。</p><div class="table-wrap"><table class="holdings-table"><thead><tr><th>排名</th><th>股票</th><th>代码</th><th>市场</th><th>${escapeHtml(weightHeading)}</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+
+function renderFundHtmlWithoutHoldings(payload, code, baseUrl = "https://tanghuaizhe.github.io/qdii-direct-monitor/") {
   const rows = (payload.rows || []).filter((row) => row.fundCode === code);
   if (!rows.length) return null;
   const fund = rows[0];
@@ -166,6 +177,19 @@ function renderFundHtml(payload, code, baseUrl = "https://tanghuaizhe.github.io/
   const description = `${fund.fundName}（${code}）申购额度、直销与代销渠道、年综合费率及来源。`;
   const channelRows = rows.map((row) => `<tr><td>${escapeHtml(row.channel.kind === "direct" ? "直销" : "代销")}</td><td>${escapeHtml(channelLabel(row.channel))}</td><td>${escapeHtml(statusLabel(row.status))}</td><td>${escapeHtml(amountLabel(row))}</td><td><span class="grade grade-${escapeHtml(row.reliability?.grade || "D")}">${escapeHtml(row.reliability?.grade || "D")}</span>${safeSourceLink(row.source)}</td></tr>`).join("");
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(fund.fundName)} ${escapeHtml(code)}｜申购额度与费率</title><meta name="description" content="${escapeHtml(description)}"><link rel="canonical" href="${escapeHtml(url)}"><meta property="og:type" content="article"><meta property="og:title" content="${escapeHtml(fund.fundName)} ${escapeHtml(code)}｜申购额度与费率"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${escapeHtml(url)}"><meta property="og:image" content="${escapeHtml(baseUrl.replace(/\/$/, "/og.png"))}"><script type="application/ld+json">${jsonLd({ "@context": "https://schema.org", "@type": "Dataset", name: `${fund.fundName}申购额度与费率`, description, url, identifier: code, dateModified: payload.observedAt, isPartOf: { "@type": "WebSite", name: "QDII Monitor", url: baseUrl } })}</script><style>:root{--ink:#241b1c;--muted:#75686a;--line:#eadfe0;--paper:#faf6f5;--primary:#b4232f;--green:#137552;--green-soft:#e5f5ed;--blue:#2b66a0}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}.page{width:min(940px,calc(100% - 28px));margin:28px auto 60px}.back{color:var(--primary);text-decoration:none}.crumb{color:var(--muted);font-size:12px;margin:16px 0}.hero,.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;margin-top:14px}.hero{background:linear-gradient(135deg,#7f1420,#b4232f 72%,#cf4450);color:#fff}.hero p{color:#f9dfe2}.code{font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;background:#ffffff20;border-radius:6px;padding:4px 7px}.hero h1{font-size:27px;margin:12px 0 4px}.muted{color:var(--muted);font-size:12px}.metric{display:flex;align-items:stretch;gap:18px;flex-wrap:wrap;margin-top:15px}.metric>div{min-width:150px;padding:10px 0}.metric strong{display:block;color:#fff;font-size:20px}.metric span{color:#f6dfe2;font-size:12px}.metric .fee-metric{min-width:190px;padding:10px 14px;background:#fff;border:1px solid #ffffff99;border-radius:10px;box-shadow:0 8px 22px #4e071430}.metric .fee-metric span{color:#57494c}.fee{font-weight:800}.fee-low{color:var(--green)}.fee-normal{color:#7a4b00}.fee-high{color:#9a2f36}.metric .fee-metric .fee-low{color:#0f6b4a}.metric .fee-metric .fee-normal{color:#7a4b00}.metric .fee-metric .fee-high{color:#9a2f36}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #f1e9ea}th{color:var(--muted);font-size:12px}.grade{display:inline-block;border-radius:999px;padding:2px 6px;margin-right:6px;font-size:11px;background:#eaf2fb;color:var(--blue)}a{color:var(--primary)}@media(max-width:650px){.hero h1{font-size:22px}.metric{gap:8px}.metric>div{min-width:calc(50% - 4px)}.metric .fee-metric{min-width:100%}.table-wrap{overflow-x:auto}table{min-width:600px}}</style></head><body><main class="page"><a class="back" href="../../">← 返回基金列表</a><p class="crumb">QDII Monitor / ${escapeHtml(indexLabel)} / ${escapeHtml(code)}</p><section class="hero"><span class="code">${escapeHtml(code)}</span><h1>${escapeHtml(fund.fundName)}</h1><p>${escapeHtml(fund.manager)} · 更新时间 ${escapeHtml(observed)}</p><div class="metric"><div><strong>${escapeHtml(amountLabel(direct))}</strong><span>最高可信直销额度</span></div><div><strong>${escapeHtml(amountLabel(agency))}</strong><span>代销额度</span></div><div class="fee-metric"><strong class="fee fee-${band.key}">${escapeHtml(feeLabel(fee?.annualRate))}</strong><span>年综合费率 · ${escapeHtml(band.label)}</span></div></div></section><section class="card"><h2>渠道与证据</h2><div class="table-wrap"><table><thead><tr><th>关系</th><th>入口</th><th>状态</th><th>每日额度</th><th>可靠性 / 来源</th></tr></thead><tbody>${channelRows}</tbody></table></div></section><section class="card"><h2>费率拆分</h2>${fee ? `<p class="fee fee-${band.key}">年综合费率 ${escapeHtml(feeLabel(fee.annualRate))}（${escapeHtml(band.label)}）</p><p class="muted">管理费 ${escapeHtml(feeLabel(fee.managementRate))} + 托管费 ${escapeHtml(feeLabel(fee.custodyRate))} + 销售服务费 ${escapeHtml(feeLabel(fee.salesServiceRate))}</p>${safeSourceLink(fee.source, "查看费率来源")}` : `<p>费率待核验。</p>`}</section><p class="muted">综合费率为年度运作费用合计，不包含因渠道、金额和持有期不同而变化的申购费、赎回费。数据仅供核验，不构成投资建议。</p></main></body></html>`;
+}
+
+function renderFundHtml(payload, code, baseUrl = "https://tanghuaizhe.github.io/qdii-direct-monitor/") {
+  const html = renderFundHtmlWithoutHoldings(payload, code, baseUrl);
+  if (!html) return null;
+  const holding = (payload.holdings || []).find((item) => item.fundCode === code);
+  return html.replace(
+    `<section class="card"><h2>渠道与证据</h2>`,
+    `${holdingsSectionHtml(holding)}<section class="card"><h2>渠道与证据</h2>`
+  ).replace("年综合费率及来源。", "年综合费率、十大持仓及来源。").replace(
+    "</style>",
+    `.holdings-table{min-width:0}.holdings-table td:nth-child(1){width:58px}.holdings-table td:nth-child(5),.holdings-table th:nth-child(5){text-align:right;white-space:nowrap}@media(max-width:650px){.holdings-table th:nth-child(4),.holdings-table td:nth-child(4){display:none}.holdings-table th,.holdings-table td{padding-left:6px;padding-right:6px}}</style>`
+  );
 }
 
 function renderHtml(payload) {

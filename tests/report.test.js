@@ -7,6 +7,10 @@ function payload(overrides = {}) {
   return { observedAt: "2026-08-29T04:47:59.125Z", warnings: [], changes: [], fees: [{
     fundCode: "040046", managementRate: 0.6, custodyRate: 0.2, salesServiceRate: 0, annualRate: 0.8,
     reliability: { grade: "B", reason: "current public fee page" }, source: { url: "https://fundf10.eastmoney.com/jjfl_040046.html" }
+  }], holdings: [{
+    fundCode: "040046", portfolioCode: "华安纳指ETF", sourceCode: "159632", exposure: "look-through", asOf: "2026-06-30",
+    items: [{ rank: 1, code: "NVDA", name: "英伟达", market: "美股", weight: 7 }], reliability: { grade: "B" },
+    source: { url: "https://danjuanapp.com/djapi/fundx/base/fund/record/asset/percent?fund_code=159632" }
   }], rows: [{
     fundCode: "040046", fundName: "华安纳指", manager: "华安基金", currency: "CNY", shareClass: "A",
     channel: { kind: "direct", access: "web" }, status: "limited", limitAmount: 100,
@@ -102,6 +106,16 @@ test("renders an indexable fund detail page", () => {
   assert.match(html, /最高可信直销额度/);
   assert.match(html, /--primary:#b4232f/);
   assert.match(html, /class="fee-metric"/);
+  assert.match(html, /十大持仓股/);
+  assert.match(html, /目标 ETF 159632 穿透持仓/);
+  assert.match(html, /英伟达/);
+  assert.match(html, /NVDA/);
+  assert.match(html, /7\.00%/);
+  assert.match(html, /占目标 ETF 净值/);
+  assert.match(html, /未经联接基金 ETF 仓位折算/);
+  assert.match(html, /报告期 2026-06-30/);
+  assert.match(html, /class="holdings-table"/);
+  assert.match(html, /nth-child\(4\).*display:none/);
   assert.match(html, /\.metric \.fee-metric\{[^}]*background:#fff/);
   assert.match(html, /\.metric span\{color:#f6dfe2/);
 });

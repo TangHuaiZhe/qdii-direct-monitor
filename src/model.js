@@ -45,14 +45,15 @@ function normalizeObservation(input) {
   return row;
 }
 
-function buildSnapshot(observedAt, rows, fees = []) {
+function buildSnapshot(observedAt, rows, fees = [], holdings = []) {
   const normalized = rows.map(normalizeObservation);
   return {
-    schemaVersion: fees.length ? 2 : 1,
+    schemaVersion: holdings.length ? 3 : (fees.length ? 2 : 1),
     observedAt,
     rows: normalized,
     byKey: Object.fromEntries(normalized.map((r) => [r.key, r])),
-    ...(fees.length ? { fees, feesByFund: Object.fromEntries(fees.map((fee) => [fee.fundCode, fee])) } : {})
+    ...(fees.length ? { fees, feesByFund: Object.fromEntries(fees.map((fee) => [fee.fundCode, fee])) } : {}),
+    ...(holdings.length ? { holdings, holdingsByFund: Object.fromEntries(holdings.map((item) => [item.fundCode, item])) } : {})
   };
 }
 

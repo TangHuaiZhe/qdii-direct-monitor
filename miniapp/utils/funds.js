@@ -82,6 +82,7 @@ function reliabilityReasonLabel(reason) {
   if (value.includes("official notice/page explicitly")) return "官方公告明确标注渠道，未验证实际下单";
   if (value.includes("current public agency sales page")) return "当前代销公开页面，未验证登录后下单";
   if (value.includes("current public fee page")) return "当前公开费率页，重要决策前请核对最新招募说明书";
+  if (value.includes("current public portfolio page")) return "当前公开持仓页，数据为报告期末快照";
   if (value.includes("channel scope is not explicit")) return "官方文本含状态信息，但渠道范围不够明确";
   if (value.includes("page fetched but")) return "页面已抓取，但无法安全解析当前渠道额度";
   if (value.includes("source unavailable")) return "公开数据源当前不可用";
@@ -123,6 +124,20 @@ function feeView(fee) {
   };
 }
 
+function holdingView(holding) {
+  if (!holding || holding.reliability?.grade === "D" || !holding.items?.length) return null;
+  const grade = holding.reliability?.grade || "D";
+  return {
+    ...holding,
+    grade,
+    gradeClass: "grade-" + grade,
+    scopeLabel: holding.exposure === "look-through" ? "目标 ETF " + holding.sourceCode + " 穿透持仓" : "本基金直接披露持仓",
+    weightHeading: holding.exposure === "look-through" ? "占目标ETF净值" : "占基金净值",
+    sourceHost: sourceHost(holding.source?.url),
+    items: holding.items.map((item) => ({ ...item, weightLabel: Number(item.weight).toFixed(2) + "%" }))
+  };
+}
+
 function buildFunds(payload) {
   const grouped = new Map();
   for (const row of payload.rows || []) {
@@ -130,6 +145,7 @@ function buildFunds(payload) {
     grouped.get(row.fundCode).push(row);
   }
   const fees = new Map((payload.fees || []).map((fee) => [fee.fundCode, fee]));
+  const holdings = new Map((payload.holdings || []).map((holding) => [holding.fundCode, holding]));
   return [...grouped.entries()].map(([code, rows]) => {
     const first = rows[0];
     const direct = pickBestChannel(rows, "direct");
@@ -155,6 +171,7 @@ function buildFunds(payload) {
       agencyAmountLabel: amountLabel(agency),
       agencyGrade: agency?.reliability?.grade || "—",
       fee,
+      holding: holdingView(holdings.get(code)),
       feeScore: fee ? Number(fee.annualRate) : Number.MAX_SAFE_INTEGER,
       searchText: buildSearchText(first.fundName, first.manager, code),
       observations: rows.map(decorateObservation),
@@ -195,6 +212,7 @@ module.exports = {
   channelLabel,
   filterAndSortFunds,
   formatObservedAt,
+  holdingView,
   isPurchasable,
   pickBestChannel,
   pickBestPurchasable,

@@ -25,7 +25,7 @@ async function once(args) {
     json: path.join(outputDir, "latest.json"),
     history: path.join(outputDir, "history")
   };
-  console.log(JSON.stringify({ observedAt: result.observedAt, rows: result.rows.length, changes: result.changes.length, warnings: result.warnings, health: result.health, notification: result.notification, outputs }, null, 2));
+  console.log(JSON.stringify({ observedAt: result.observedAt, rows: result.rows.length, holdings: result.holdings?.length || 0, changes: result.changes.length, warnings: result.warnings, health: result.health, notification: result.notification, outputs }, null, 2));
   return config;
 }
 
