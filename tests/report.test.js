@@ -14,7 +14,7 @@ function payload(overrides = {}) {
   }], rows: [{
     fundCode: "040046", fundName: "华安纳指", manager: "华安基金", currency: "CNY", shareClass: "A",
     channel: { kind: "direct", access: "web" }, status: "limited", limitAmount: 100,
-    reliability: { grade: "A", reason: "official" }, source: { url: "https://www.huaan.com.cn/funds/040046/index.shtml" }
+    reliability: { grade: "A", reason: "official" }, source: { url: "https://www.huaan.com.cn/funds/040046/index.shtml", kind: "product", adapter: "huaan" }
   }], ...overrides };
 }
 
@@ -118,6 +118,42 @@ test("renders an indexable fund detail page", () => {
   assert.match(html, /nth-child\(4\).*display:none/);
   assert.match(html, /\.metric \.fee-metric\{[^}]*background:#fff/);
   assert.match(html, /\.metric span\{color:#f6dfe2/);
+});
+
+test("renders explicit direct and agency detail links on list and detail pages", () => {
+  const source = payload();
+  source.rows.push({
+    ...source.rows[0],
+    channel: { kind: "agency", access: "eastmoney", name: "天天基金" },
+    reliability: { grade: "B", reason: "current public agency sales page; logged-in order submission was not tested" },
+    source: { url: "https://fund.eastmoney.com/040046.html", kind: "public-sales-page", adapter: "eastmoney" }
+  });
+
+  const listHtml = renderHtml(source);
+  assert.match(listHtml, /查看直销详情/);
+  assert.match(listHtml, /查看代销详情/);
+  assert.match(listHtml, /href="https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml"/);
+  assert.match(listHtml, /href="https:\/\/fund\.eastmoney\.com\/040046\.html"/);
+
+  const detailHtml = renderFundHtml(source, "040046");
+  assert.match(detailHtml, /class="sales-actions" aria-label="基金销售网站入口"/);
+  assert.match(detailHtml, /class="sales-button"[^>]+>查看直销详情/);
+  assert.match(detailHtml, /class="sales-button"[^>]+>查看代销详情/);
+});
+
+test("does not label notices or insecure sources as fund detail links", () => {
+  const source = payload({ rows: [{
+    ...payload().rows[0],
+    source: { url: "https://www.huaan.com.cn/notice.pdf", kind: "notice", adapter: "huaan" }
+  }, {
+    ...payload().rows[0],
+    channel: { kind: "agency", access: "eastmoney", name: "天天基金" },
+    source: { url: "http://fund.eastmoney.com/040046.html", kind: "public-sales-page", adapter: "eastmoney" }
+  }] });
+  const html = renderHtml(source);
+  assert.doesNotMatch(html, /查看直销详情/);
+  assert.doesNotMatch(html, /查看代销详情/);
+  assert.match(html, />证据<\/a>/);
 });
 
 test("renders the configured non-Nasdaq-100 index label", () => {
