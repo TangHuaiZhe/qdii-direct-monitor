@@ -13,7 +13,7 @@ class OfficialDirectAdapter {
     const inferredChannels = inferChannels(text);
     let channels = source.channels || (source.channel ? [source.channel] : inferredChannels.filter((channel) => channel.kind === "direct"));
     if (!channels.length) channels = [{ kind: "direct", access: "all" }];
-    let status = parseStatus(text);
+    let status = this.parseStatus ? this.parseStatus(text, fund) : parseStatus(text);
     if (status === "unknown" && amount) status = "limited";
     if (status === "limited" && !amount) status = "unknown";
     const explicitChannel = Boolean(source.channels || source.channel || inferredChannels.some((channel) => channel.kind === "direct"));

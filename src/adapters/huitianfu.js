@@ -1,6 +1,21 @@
 "use strict";
 const { createAdapter } = require("./base");
-const { parseAmount } = require("../parser");
+const { focusText, parseAmount, parseStatus } = require("../parser");
+
+function focusCurrentStatus(text, fund) {
+  const matches = [...text.matchAll(new RegExp(`(?:^|\\s)${fund.code}(?=\\s|$)`, "g"))];
+  const index = matches.at(-1)?.index ?? text.indexOf(fund.code);
+  return index < 0 ? text : text.slice(Math.max(0, index - 220), index + 620);
+}
+
+function focusFundText(text, fund) {
+  return fund.code === "001668" ? focusCurrentStatus(text, fund) : focusText(text, fund);
+}
+
+function parseCurrentStatus(text, fund) {
+  if (fund.code === "001668" && /正常\s+申购(?:\s+定投)?/.test(text)) return "open";
+  return parseStatus(text);
+}
 
 function parseCurrentShareAmount(text, fund) {
   const compact = text.replace(/([\p{Script=Han}])\s+(?=[\p{Script=Han}])/gu, "$1");
@@ -14,4 +29,4 @@ function parseCurrentShareAmount(text, fund) {
   return parseAmount(text);
 }
 
-module.exports = createAdapter({ id: "huitianfu", manager: "汇添富基金", allowedHosts: ["99fund.com"], parseAmount: parseCurrentShareAmount, defaultSource: (f) => `https://www.99fund.com/main/products/pofund/${f.code}/fundgg.shtml` });
+module.exports = createAdapter({ id: "huitianfu", manager: "汇添富基金", allowedHosts: ["99fund.com"], focus: focusFundText, parseAmount: parseCurrentShareAmount, parseStatus: parseCurrentStatus, defaultSource: (f) => `https://www.99fund.com/main/products/pofund/${f.code}/fundgg.shtml` });

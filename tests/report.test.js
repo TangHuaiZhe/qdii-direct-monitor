@@ -127,3 +127,11 @@ test("renders the configured non-Nasdaq-100 index label", () => {
   assert.match(html, /QDII Monitor \/ 纳斯达克科技 \/ 017091/);
   assert.doesNotMatch(html, /QDII Monitor \/ 纳斯达克100 \/ 017091/);
 });
+
+test("renders the global mobile internet index label", () => {
+  const source = payload();
+  source.rows = source.rows.map((row) => ({ ...row, fundCode: "001668", fundName: "汇添富全球移动互联混合（QDII）人民币A", manager: "汇添富基金", index: "globalMobileInternet" }));
+  const html = renderFundHtml(source, "001668");
+  assert.match(html, /QDII Monitor \/ 全球移动互联 \/ 001668/);
+  assert.doesNotMatch(html, /QDII Monitor \/ 纳斯达克100 \/ 001668/);
+});

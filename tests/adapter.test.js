@@ -48,6 +48,17 @@ test("Huitianfu uses the current A/C/E share-table values instead of an older am
   }
 });
 
+test("Huitianfu parses the current global mobile internet subscription status", async () => {
+  const text = "001668 汇添富全球移动互联混合（QDII）人民币A 2026-09-05 5.2195 5.2195 正常 申购 定投";
+  const context = { observedAt: "2026-09-06T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => ({ bytes: Buffer.from(text), contentType: "text/html", finalUrl: url }) };
+  const rows = await huitianfu.collect({ code: "001668", name: "汇添富全球移动互联混合（QDII）人民币A", manager: "汇添富基金", index: "globalMobileInternet", currency: "CNY", shareClass: "A",
+    officialSources: [{ url: "https://www.99fund.com/main/products/pofund/index.shtml", kind: "current-status", channel: { kind: "direct", access: "web" } }] }, context);
+  assert.equal(rows[0].status, "open");
+  assert.equal(rows[0].index, "globalMobileInternet");
+  assert.equal(rows[0].reliability.grade, "A");
+});
+
 test("Southern parses the latest A-share purchase limit notice", async () => {
   const text = "基金主代码 016452 暂停大额申购起始日 2025年11月20日 下属基金份额的代码 016452 016453 021000 该基金份额的限制金额 100元 100元 2万元 自2025年11月20日起，如个人投资者单日单个基金账户单笔申购本基金A类基金份额超过100元，则仅对100元确认成功";
   const context = { observedAt: "2026-08-29T00:00:00Z", warnings: [], timeoutMs: 10,
@@ -142,6 +153,32 @@ test("config tracks 景顺长城 Nasdaq technology share 017091", () => {
       url: "https://www.igwfmc.com/main/jjcp/product/017091/detail.html",
       kind: "product",
       channel: { kind: "direct", access: "all" }
+    }
+  });
+});
+
+test("config tracks 汇添富全球移动互联人民币A share 001668", () => {
+  const config = require("../config/funds.example.json");
+  const fund = config.funds.find((item) => item.code === "001668");
+  assert.deepEqual(fund && {
+    name: fund.name,
+    manager: fund.manager,
+    adapter: fund.adapter,
+    index: fund.index,
+    currency: fund.currency,
+    shareClass: fund.shareClass,
+    source: fund.officialSources[0]
+  }, {
+    name: "汇添富全球移动互联混合（QDII）人民币A",
+    manager: "汇添富基金",
+    adapter: "huitianfu",
+    index: "globalMobileInternet",
+    currency: "CNY",
+    shareClass: "A",
+    source: {
+      url: "https://www.99fund.com/main/products/pofund/index.shtml",
+      kind: "current-status",
+      channel: { kind: "direct", access: "web" }
     }
   });
 });
