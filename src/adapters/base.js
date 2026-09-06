@@ -6,6 +6,11 @@ const { extractPdfLinks, extractRelevantLinks, focusText, inferChannels, parseAm
 class OfficialDirectAdapter {
   constructor(spec) { Object.assign(this, spec); }
 
+  salesUrl(fund) {
+    const resolve = this.detailSource || this.defaultSource;
+    return resolve ? resolve(fund) : null;
+  }
+
   async parseResource(resource, fund, source, observedAt) {
     const fullText = await resourceToText(resource);
     const text = this.focus ? this.focus(fullText, fund) : focusText(fullText, fund);
@@ -22,6 +27,7 @@ class OfficialDirectAdapter {
       fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", currency: amount?.currency || fund.currency || "CNY",
       shareClass: fund.shareClass || "", channel, status, limitAmount: amount?.amount || null,
       observedAt, effectiveDate: source.effectiveDate || null,
+      salesUrl: this.salesUrl(fund),
       source: { url: resource.finalUrl, kind: source.kind || "notice", adapter: this.id },
       reliability: { grade: status === "unknown" ? "D" : grade, reason: status === "unknown" ? "page fetched but current channel limit was not safely parsed" : this.reliabilityReason(source, explicitChannel) },
       notes: status === "unknown" ? ["No current, channel-specific amount could be established; do not treat as purchasable."] : []
@@ -69,6 +75,7 @@ class OfficialDirectAdapter {
   unknownRow(fund, observedAt, url) {
     return { fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", currency: fund.currency || "CNY", shareClass: fund.shareClass || "",
       channel: { kind: "direct", access: "all" }, status: "unknown", limitAmount: null, observedAt,
+      salesUrl: this.salesUrl(fund),
       source: url ? { url, kind: "fallback", adapter: this.id } : null,
       reliability: { grade: "D", reason: "official source unavailable or not parseable" }, notes: ["Manual confirmation in the manager app/site may be required."] };
   }

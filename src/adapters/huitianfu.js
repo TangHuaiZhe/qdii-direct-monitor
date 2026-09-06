@@ -29,4 +29,4 @@ function parseCurrentShareAmount(text, fund) {
   return parseAmount(text);
 }
 
-module.exports = createAdapter({ id: "huitianfu", manager: "汇添富基金", allowedHosts: ["99fund.com"], focus: focusFundText, parseAmount: parseCurrentShareAmount, parseStatus: parseCurrentStatus, defaultSource: (f) => `https://www.99fund.com/main/products/pofund/${f.code}/fundgg.shtml` });
+module.exports = createAdapter({ id: "huitianfu", manager: "汇添富基金", allowedHosts: ["99fund.com"], focus: focusFundText, parseAmount: parseCurrentShareAmount, parseStatus: parseCurrentStatus, defaultSource: (f) => `https://www.99fund.com/main/products/pofund/${f.code}/fundgg.shtml`, detailSource: (f) => `https://www.99fund.com/main/products/pofund/${f.code}/fundnav.shtml` });

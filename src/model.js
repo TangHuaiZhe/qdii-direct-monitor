@@ -37,6 +37,7 @@ function normalizeObservation(input) {
     accountBasis: input.accountBasis || "single-fund-account-daily-cumulative",
     observedAt: input.observedAt || new Date().toISOString(),
     effectiveDate: input.effectiveDate || null,
+    salesUrl: input.salesUrl || null,
     source: input.source || null,
     reliability: input.reliability,
     notes: input.notes || []

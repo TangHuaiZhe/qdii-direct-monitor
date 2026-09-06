@@ -14,6 +14,7 @@ function payload(overrides = {}) {
   }], rows: [{
     fundCode: "040046", fundName: "华安纳指", manager: "华安基金", currency: "CNY", shareClass: "A",
     channel: { kind: "direct", access: "web" }, status: "limited", limitAmount: 100,
+    salesUrl: "https://www.huaan.com.cn/funds/040046/index.shtml",
     reliability: { grade: "A", reason: "official" }, source: { url: "https://www.huaan.com.cn/funds/040046/index.shtml", kind: "product", adapter: "huaan" }
   }], ...overrides };
 }
@@ -130,20 +131,32 @@ test("renders explicit direct and agency detail links on list and detail pages",
   });
 
   const listHtml = renderHtml(source);
-  assert.match(listHtml, /查看直销详情/);
+  assert.match(listHtml, /前往直销官网/);
   assert.match(listHtml, /查看代销详情/);
   assert.match(listHtml, /href="https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml"/);
   assert.match(listHtml, /href="https:\/\/fund\.eastmoney\.com\/040046\.html"/);
 
   const detailHtml = renderFundHtml(source, "040046");
   assert.match(detailHtml, /class="sales-actions" aria-label="基金销售网站入口"/);
-  assert.match(detailHtml, /class="sales-button"[^>]+>查看直销详情/);
+  assert.match(detailHtml, /class="sales-button"[^>]+>前往直销官网/);
   assert.match(detailHtml, /class="sales-button"[^>]+>查看代销详情/);
 });
 
-test("does not label notices or insecure sources as fund detail links", () => {
+test("keeps notice evidence separate from the official direct sales link", () => {
   const source = payload({ rows: [{
     ...payload().rows[0],
+    source: { url: "https://www.huaan.com.cn/notice.pdf", kind: "notice", adapter: "huaan" }
+  }] });
+  const html = renderHtml(source);
+  assert.match(html, /前往直销官网/);
+  assert.match(html, /href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf"[^>]*>证据<\/a>/);
+  assert.match(html, /href="https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml"/);
+});
+
+test("does not render insecure sales links", () => {
+  const source = payload({ rows: [{
+    ...payload().rows[0],
+    salesUrl: "http://www.huaan.com.cn/funds/040046/index.shtml",
     source: { url: "https://www.huaan.com.cn/notice.pdf", kind: "notice", adapter: "huaan" }
   }, {
     ...payload().rows[0],
@@ -151,7 +164,7 @@ test("does not label notices or insecure sources as fund detail links", () => {
     source: { url: "http://fund.eastmoney.com/040046.html", kind: "public-sales-page", adapter: "eastmoney" }
   }] });
   const html = renderHtml(source);
-  assert.doesNotMatch(html, /查看直销详情/);
+  assert.doesNotMatch(html, /前往直销官网/);
   assert.doesNotMatch(html, /查看代销详情/);
   assert.match(html, />证据<\/a>/);
 });

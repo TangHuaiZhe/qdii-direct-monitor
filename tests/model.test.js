@@ -23,6 +23,15 @@ test("limited status requires amount", () => {
   assert.throws(() => normalizeObservation(row({ limitAmount: null })), /positive/);
 });
 
+test("snapshot preserves the direct sales URL independently of evidence", () => {
+  const normalized = normalizeObservation(row({
+    salesUrl: "https://www.huaan.com.cn/funds/040046/index.shtml",
+    source: { url: "https://www.huaan.com.cn/notice.pdf", kind: "notice" }
+  }));
+  assert.equal(normalized.salesUrl, "https://www.huaan.com.cn/funds/040046/index.shtml");
+  assert.equal(normalized.source.url, "https://www.huaan.com.cn/notice.pdf");
+});
+
 test("compare detects increase and status changes", () => {
   const before = buildSnapshot("a", [row()]);
   const after = buildSnapshot("b", [row({ limitAmount: 1000 })]);

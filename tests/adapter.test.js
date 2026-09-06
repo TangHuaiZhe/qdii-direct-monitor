@@ -18,6 +18,7 @@ test("official adapter produces a direct observation with evidence", async () =>
   assert.equal(rows[0].status, "limited");
   assert.equal(rows[0].limitAmount, 100);
   assert.equal(rows[0].reliability.grade, "A");
+  assert.equal(rows[0].salesUrl, "https://www.huaan.com.cn/funds/040046/index.shtml");
 });
 
 test("unparseable official page is unknown, never open", async () => {
@@ -95,6 +96,18 @@ test("Tianhong page shape changes fail closed", async () => {
 
 test("new manager adapters are registered", () => {
   for (const id of ["guotai", "baoying", "huataipb", "ccb", "jpmorgan", "wanjia", "tianhong", "igwfmc", "chinaamc"]) assert.ok(adapters[id], id);
+});
+
+test("every configured fund has a secure official direct website entry", () => {
+  const config = require("../config/funds.example.json");
+  for (const fund of config.funds) {
+    const adapter = adapters[fund.adapter];
+    const salesUrl = adapter.salesUrl(fund);
+    const parsed = new URL(salesUrl);
+    assert.equal(parsed.protocol, "https:", fund.code);
+    assert.ok(adapter.allowedHosts.some((host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`)), `${fund.code} ${parsed.hostname}`);
+    assert.doesNotMatch(parsed.pathname, /\.pdf$/i, fund.code);
+  }
 });
 
 test("华夏 adapter parses an open official subscription status", async () => {

@@ -5,5 +5,6 @@ module.exports = createAdapter({
   id: "southern",
   manager: "南方基金",
   allowedHosts: ["nffund.com"],
-  defaultSource: () => "https://www.nffund.com/new/transaction-guide/product-status-and-limits.html"
+  defaultSource: () => "https://www.nffund.com/new/transaction-guide/product-status-and-limits.html",
+  detailSource: (fund) => `https://www.nffund.com/new/personal-financing/detail.html?fundCode=${fund.code}`
 });

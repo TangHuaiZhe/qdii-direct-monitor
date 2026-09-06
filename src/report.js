@@ -94,17 +94,23 @@ function safeSourceLink(source, label = "证据") {
 }
 
 function salesDetailRow(rows, kind) {
-  const sourceKind = kind === "direct" ? "product" : "public-sales-page";
-  return bestChannel((rows || []).filter((row) => row.channel?.kind === kind && row.source?.kind === sourceKind), kind);
+  return bestChannel((rows || []).filter((row) => row.channel?.kind === kind && (kind === "direct" ? row.salesUrl : row.source?.kind === "public-sales-page")), kind);
+}
+
+function salesDetailUrl(row) {
+  return row?.channel?.kind === "direct" ? row.salesUrl : row?.source?.url;
 }
 
 function salesDetailLink(row, className = "sales-link") {
-  if (!row?.source?.url) return "";
-  const relation = row.channel?.kind === "direct" ? "直销" : "代销";
+  const href = salesDetailUrl(row);
+  if (!href) return "";
+  const direct = row.channel?.kind === "direct";
+  const relation = direct ? "直销" : "代销";
+  const label = direct ? "前往直销官网" : "查看代销详情";
   try {
-    const url = new URL(row.source.url);
+    const url = new URL(href);
     if (url.protocol !== "https:") return "";
-    return `<a class="${escapeHtml(className)}" href="${escapeHtml(url.toString())}" target="_blank" rel="noopener noreferrer" aria-label="在新窗口查看${relation}网站的基金详情">查看${relation}详情 <span aria-hidden="true">↗</span></a>`;
+    return `<a class="${escapeHtml(className)}" href="${escapeHtml(url.toString())}" target="_blank" rel="noopener noreferrer" aria-label="在新窗口打开${relation}网站">${label} <span aria-hidden="true">↗</span></a>`;
   } catch { return ""; }
 }
 
@@ -122,7 +128,7 @@ function channelCell(row, detailRow) {
   if (!row) return `<td class="channel-cell unknown"><span class="channel-status status-unknown">暂无数据</span></td>`;
   const grade = row.reliability?.grade || "D";
   const detailLink = salesDetailLink(detailRow);
-  const evidenceLink = detailRow === row ? "" : safeSourceLink(row.source);
+  const evidenceLink = detailRow === row && salesDetailUrl(detailRow) === row.source?.url ? "" : safeSourceLink(row.source);
   return `<td class="channel-cell"><div class="channel-main"><span class="channel-status status-${escapeHtml(row.status)}">${escapeHtml(statusLabel(row.status))}</span><strong>${escapeHtml(amountLabel(row))}</strong></div><div class="channel-meta"><span>${escapeHtml(channelLabel(row.channel))}</span><span class="grade grade-${escapeHtml(grade)}">${escapeHtml(grade)}</span>${evidenceLink}</div>${detailLink}</td>`;
 }
 
@@ -197,7 +203,8 @@ function renderFundHtmlWithoutHoldings(payload, code, baseUrl = "https://tanghua
   const detailActions = [salesDetailLink(directDetail, "sales-button"), salesDetailLink(agencyDetail, "sales-button")].filter(Boolean).join("");
   const channelRows = rows.map((row) => {
     const isDetailSource = row === directDetail || row === agencyDetail;
-    return `<tr><td>${escapeHtml(row.channel.kind === "direct" ? "直销" : "代销")}</td><td>${escapeHtml(channelLabel(row.channel))}</td><td>${escapeHtml(statusLabel(row.status))}</td><td>${escapeHtml(amountLabel(row))}</td><td><span class="grade grade-${escapeHtml(row.reliability?.grade || "D")}">${escapeHtml(row.reliability?.grade || "D")}</span>${isDetailSource ? salesDetailLink(row) : safeSourceLink(row.source)}</td></tr>`;
+    const evidenceLink = isDetailSource && salesDetailUrl(row) === row.source?.url ? "" : safeSourceLink(row.source);
+    return `<tr><td>${escapeHtml(row.channel.kind === "direct" ? "直销" : "代销")}</td><td>${escapeHtml(channelLabel(row.channel))}</td><td>${escapeHtml(statusLabel(row.status))}</td><td>${escapeHtml(amountLabel(row))}</td><td><span class="grade grade-${escapeHtml(row.reliability?.grade || "D")}">${escapeHtml(row.reliability?.grade || "D")}</span>${evidenceLink}${isDetailSource ? salesDetailLink(row) : ""}</td></tr>`;
   }).join("");
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(fund.fundName)} ${escapeHtml(code)}｜申购额度与费率</title><meta name="description" content="${escapeHtml(description)}"><link rel="canonical" href="${escapeHtml(url)}"><meta property="og:type" content="article"><meta property="og:title" content="${escapeHtml(fund.fundName)} ${escapeHtml(code)}｜申购额度与费率"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${escapeHtml(url)}"><meta property="og:image" content="${escapeHtml(baseUrl.replace(/\/$/, "/og.png"))}"><script type="application/ld+json">${jsonLd({ "@context": "https://schema.org", "@type": "Dataset", name: `${fund.fundName}申购额度与费率`, description, url, identifier: code, dateModified: payload.observedAt, isPartOf: { "@type": "WebSite", name: "QDII Monitor", url: baseUrl } })}</script><style>:root{--ink:#241b1c;--muted:#75686a;--line:#eadfe0;--paper:#faf6f5;--primary:#b4232f;--green:#137552;--green-soft:#e5f5ed;--blue:#2b66a0}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}.page{width:min(940px,calc(100% - 28px));margin:28px auto 60px}.back{color:var(--primary);text-decoration:none}.crumb{color:var(--muted);font-size:12px;margin:16px 0}.hero,.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;margin-top:14px}.hero{background:linear-gradient(135deg,#7f1420,#b4232f 72%,#cf4450);color:#fff}.hero p{color:#f9dfe2}.code{font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;background:#ffffff20;border-radius:6px;padding:4px 7px}.hero h1{font-size:27px;margin:12px 0 4px}.muted{color:var(--muted);font-size:12px}.metric{display:flex;align-items:stretch;gap:18px;flex-wrap:wrap;margin-top:15px}.metric>div{min-width:150px;padding:10px 0}.metric strong{display:block;color:#fff;font-size:20px}.metric span{color:#f6dfe2;font-size:12px}.metric .fee-metric{min-width:190px;padding:10px 14px;background:#fff;border:1px solid #ffffff99;border-radius:10px;box-shadow:0 8px 22px #4e071430}.metric .fee-metric span{color:#57494c}.sales-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid #ffffff2e}.sales-button{display:inline-flex;align-items:center;gap:5px;padding:8px 12px;border:1px solid #ffffff66;border-radius:8px;background:#fff;color:var(--primary);font-weight:750;text-decoration:none}.sales-button:hover{background:#fff4f5}.sales-link{display:inline-flex;align-items:center;gap:4px;font-weight:700}.fee{font-weight:800}.fee-low{color:var(--green)}.fee-normal{color:#7a4b00}.fee-high{color:#9a2f36}.metric .fee-metric .fee-low{color:#0f6b4a}.metric .fee-metric .fee-normal{color:#7a4b00}.metric .fee-metric .fee-high{color:#9a2f36}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #f1e9ea}th{color:var(--muted);font-size:12px}.grade{display:inline-block;border-radius:999px;padding:2px 6px;margin-right:6px;font-size:11px;background:#eaf2fb;color:var(--blue)}a{color:var(--primary)}@media(max-width:650px){.hero h1{font-size:22px}.metric{gap:8px}.metric>div{min-width:calc(50% - 4px)}.metric .fee-metric{min-width:100%}.sales-button{flex:1;justify-content:center}.table-wrap{overflow-x:auto}table{min-width:600px}}</style></head><body><main class="page"><a class="back" href="../../">← 返回基金列表</a><p class="crumb">QDII Monitor / ${escapeHtml(indexLabel)} / ${escapeHtml(code)}</p><section class="hero"><span class="code">${escapeHtml(code)}</span><h1>${escapeHtml(fund.fundName)}</h1><p>${escapeHtml(fund.manager)} · 更新时间 ${escapeHtml(observed)}</p><div class="metric"><div><strong>${escapeHtml(amountLabel(direct))}</strong><span>最高可信直销额度</span></div><div><strong>${escapeHtml(amountLabel(agency))}</strong><span>代销额度</span></div><div class="fee-metric"><strong class="fee fee-${band.key}">${escapeHtml(feeLabel(fee?.annualRate))}</strong><span>年综合费率 · ${escapeHtml(band.label)}</span></div></div>${detailActions ? `<div class="sales-actions" aria-label="基金销售网站入口">${detailActions}</div>` : ""}</section><section class="card"><h2>渠道与证据</h2><div class="table-wrap"><table><thead><tr><th>关系</th><th>入口</th><th>状态</th><th>每日额度</th><th>可靠性 / 来源</th></tr></thead><tbody>${channelRows}</tbody></table></div></section><section class="card"><h2>费率拆分</h2>${fee ? `<p class="fee fee-${band.key}">年综合费率 ${escapeHtml(feeLabel(fee.annualRate))}（${escapeHtml(band.label)}）</p><p class="muted">管理费 ${escapeHtml(feeLabel(fee.managementRate))} + 托管费 ${escapeHtml(feeLabel(fee.custodyRate))} + 销售服务费 ${escapeHtml(feeLabel(fee.salesServiceRate))}</p>${safeSourceLink(fee.source, "查看费率来源")}` : `<p>费率待核验。</p>`}</section><p class="muted">综合费率为年度运作费用合计，不包含因渠道、金额和持有期不同而变化的申购费、赎回费。数据仅供核验，不构成投资建议。</p></main></body></html>`;
 }
