@@ -78,7 +78,7 @@ function parseShareAmount(text, fund) {
 
 function parseStatus(text) {
   const value = normalizeExtractedText(text);
-  if (/(暂停申购|停止申购|暂不开放购买|不可购买)/.test(value)) return "suspended";
+  if (/(暂停申购|停止申购|暂不开放购买|不可购买|申购状态[:：]?\s*(?:关闭|暂停))/.test(value)) return "suspended";
   if (/(限制大额申购|暂停大额申购|限大额|限额申购|限购|单日单账户限额)/.test(value)) return "limited";
   if (/(恢复申购|开放申购|开放购买|立即申购)/.test(value)) return "open";
   return "unknown";

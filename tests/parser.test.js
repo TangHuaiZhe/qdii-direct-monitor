@@ -14,6 +14,9 @@ test("parses current Eastmoney limit wording", () => {
   assert.equal(parseStatus(text), "limited");
   assert.equal(parseAmount(text).amount, 10);
 });
+test("parses official product pages that label a closed subscription status", () => {
+  assert.equal(parseStatus("申购状态：关闭 赎回状态：开放"), "suspended");
+});
 test("parses official notice when currency unit precedes the amount", () => {
   assert.deepEqual(parseAmount("限制申购金额（单位：人民币元） 2,000.00"), { amount: 2000, currency: "CNY" });
 });

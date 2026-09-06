@@ -105,3 +105,11 @@ test("renders an indexable fund detail page", () => {
   assert.match(html, /\.metric \.fee-metric\{[^}]*background:#fff/);
   assert.match(html, /\.metric span\{color:#f6dfe2/);
 });
+
+test("renders the configured non-Nasdaq-100 index label", () => {
+  const source = payload();
+  source.rows = source.rows.map((row) => ({ ...row, fundCode: "017091", fundName: "景顺长城纳斯达克科技ETF联接（QDII）A人民币", manager: "景顺长城基金", index: "nasdaqTechnology" }));
+  const html = renderFundHtml(source, "017091");
+  assert.match(html, /QDII Monitor \/ 纳斯达克科技 \/ 017091/);
+  assert.doesNotMatch(html, /QDII Monitor \/ 纳斯达克100 \/ 017091/);
+});

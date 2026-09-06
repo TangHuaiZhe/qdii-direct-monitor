@@ -19,7 +19,7 @@ class OfficialDirectAdapter {
     const explicitChannel = Boolean(source.channels || source.channel || inferredChannels.some((channel) => channel.kind === "direct"));
     const grade = ["product", "current-status"].includes(source.kind) && explicitChannel ? "A" : (explicitChannel ? "B" : "C");
     return channels.filter((channel) => channel.kind === "direct").map((channel) => ({
-      fundCode: fund.code, fundName: fund.name, manager: fund.manager, currency: amount?.currency || fund.currency || "CNY",
+      fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", currency: amount?.currency || fund.currency || "CNY",
       shareClass: fund.shareClass || "", channel, status, limitAmount: amount?.amount || null,
       observedAt, effectiveDate: source.effectiveDate || null,
       source: { url: resource.finalUrl, kind: source.kind || "notice", adapter: this.id },
@@ -67,7 +67,7 @@ class OfficialDirectAdapter {
   }
 
   unknownRow(fund, observedAt, url) {
-    return { fundCode: fund.code, fundName: fund.name, manager: fund.manager, currency: fund.currency || "CNY", shareClass: fund.shareClass || "",
+    return { fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", currency: fund.currency || "CNY", shareClass: fund.shareClass || "",
       channel: { kind: "direct", access: "all" }, status: "unknown", limitAmount: null, observedAt,
       source: url ? { url, kind: "fallback", adapter: this.id } : null,
       reliability: { grade: "D", reason: "official source unavailable or not parseable" }, notes: ["Manual confirmation in the manager app/site may be required."] };

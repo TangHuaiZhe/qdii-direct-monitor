@@ -5,6 +5,7 @@ const huaan = require("../src/adapters/huaan");
 const huitianfu = require("../src/adapters/huitianfu");
 const southern = require("../src/adapters/southern");
 const tianhong = require("../src/adapters/tianhong");
+const igwfmc = require("../src/adapters/igwfmc");
 const { adapters } = require("../src/adapters");
 
 test("official adapter produces a direct observation with evidence", async () => {
@@ -81,7 +82,7 @@ test("Tianhong page shape changes fail closed", async () => {
 });
 
 test("new manager adapters are registered", () => {
-  for (const id of ["guotai", "baoying", "huataipb", "ccb", "jpmorgan", "wanjia", "tianhong"]) assert.ok(adapters[id], id);
+  for (const id of ["guotai", "baoying", "huataipb", "ccb", "jpmorgan", "wanjia", "tianhong", "igwfmc"]) assert.ok(adapters[id], id);
 });
 
 test("config tracks 广发美元A Nasdaq-100 share 000055", () => {
@@ -102,6 +103,43 @@ test("config tracks 广发美元A Nasdaq-100 share 000055", () => {
     shareClass: "A",
     source: {
       url: "https://www.gffunds.com.cn/funds/?fundcode=000055",
+      kind: "product",
+      channel: { kind: "direct", access: "all" }
+    }
+  });
+});
+
+test("景顺长城 adapter parses a closed official subscription status", async () => {
+  const context = { observedAt: "2026-09-06T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => ({ bytes: Buffer.from("017091 申购状态：关闭 赎回状态：开放"), contentType: "text/html", finalUrl: url }) };
+  const rows = await igwfmc.collect({ code: "017091", name: "景顺长城纳斯达克科技ETF联接（QDII）A人民币", manager: "景顺长城基金", index: "nasdaqTechnology", currency: "CNY", shareClass: "A",
+    officialSources: [{ url: "https://www.igwfmc.com/main/jjcp/product/017091/detail.html", kind: "product", channel: { kind: "direct", access: "all" } }] }, context);
+  assert.equal(rows[0].status, "suspended");
+  assert.equal(rows[0].index, "nasdaqTechnology");
+  assert.equal(rows[0].currency, "CNY");
+  assert.equal(rows[0].reliability.grade, "A");
+});
+
+test("config tracks 景顺长城 Nasdaq technology share 017091", () => {
+  const config = require("../config/funds.example.json");
+  const fund = config.funds.find((item) => item.code === "017091");
+  assert.deepEqual(fund && {
+    name: fund.name,
+    manager: fund.manager,
+    adapter: fund.adapter,
+    index: fund.index,
+    currency: fund.currency,
+    shareClass: fund.shareClass,
+    source: fund.officialSources[0]
+  }, {
+    name: "景顺长城纳斯达克科技ETF联接（QDII）A人民币",
+    manager: "景顺长城基金",
+    adapter: "igwfmc",
+    index: "nasdaqTechnology",
+    currency: "CNY",
+    shareClass: "A",
+    source: {
+      url: "https://www.igwfmc.com/main/jjcp/product/017091/detail.html",
       kind: "product",
       channel: { kind: "direct", access: "all" }
     }

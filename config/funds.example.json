@@ -47,6 +47,11 @@
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {
+      "code": "017091", "name": "景顺长城纳斯达克科技ETF联接（QDII）A人民币", "manager": "景顺长城基金", "adapter": "igwfmc", "index": "nasdaqTechnology", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://www.igwfmc.com/main/jjcp/product/017091/detail.html", "kind": "product", "channel": { "kind": "direct", "access": "all" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
       "code": "040046", "name": "华安纳斯达克100ETF联接（QDII）A", "manager": "华安基金", "adapter": "huaan", "currency": "CNY", "shareClass": "A",
       "officialSources": [{ "url": "https://www.huaan.com.cn/funds/040046/index.shtml", "kind": "product", "channel": { "kind": "direct", "access": "all" }, "followLinks": true }],
       "agency": { "eastmoney": true }, "manualChannels": []
