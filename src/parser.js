@@ -18,7 +18,11 @@ function htmlToText(html) {
 }
 
 function resourceToHtml(resource) {
-  const charset = String(resource.contentType || "").match(/charset\s*=\s*([^;\s]+)/i)?.[1]?.replace(/["']/g, "").toLowerCase();
+  let charset = String(resource.contentType || "").match(/charset\s*=\s*([^;\s]+)/i)?.[1]?.replace(/["']/g, "").toLowerCase();
+  if (!charset && /html/i.test(String(resource.contentType || ""))) {
+    const head = new TextDecoder("latin1").decode(resource.bytes.slice(0, 4096));
+    charset = head.match(/charset\s*=\s*["']?([a-z0-9-]+)/i)?.[1]?.toLowerCase();
+  }
   const encoding = charset === "gb2312" || charset === "gbk" || charset === "gb18030" ? "gb18030" : "utf-8";
   return new TextDecoder(encoding).decode(resource.bytes);
 }

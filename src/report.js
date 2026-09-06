@@ -170,7 +170,7 @@ function renderFundHtmlWithoutHoldings(payload, code, baseUrl = "https://tanghua
   const fee = (payload.fees || []).find((item) => item.fundCode === code);
   const direct = bestChannel(rows, "direct");
   const agency = bestChannel(rows, "agency");
-  const indexLabel = { nasdaqTechnology: "纳斯达克科技", globalMobileInternet: "全球移动互联" }[fund.index] || "纳斯达克100";
+  const indexLabel = { nasdaqTechnology: "纳斯达克科技", globalMobileInternet: "全球移动互联", globalTechnology: "全球科技先锋" }[fund.index] || "纳斯达克100";
   const band = feeBand(fee?.annualRate);
   const url = `${baseUrl.replace(/\/$/, "")}/funds/${encodeURIComponent(code)}/`;
   const observed = new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "medium", timeZone: "Asia/Shanghai" }).format(new Date(payload.observedAt));

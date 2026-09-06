@@ -17,6 +17,7 @@
     "000055": { "portfolioCode": "广发纳指ETF", "sourceCode": "159941", "exposure": "look-through" },
     "006479": { "portfolioCode": "广发纳指ETF", "sourceCode": "159941", "exposure": "look-through" },
     "001668": { "portfolioCode": "汇添富全球移动互联混合", "sourceCode": "001668", "exposure": "direct" },
+    "005698": { "portfolioCode": "华夏全球科技先锋混合", "sourceCode": "005698", "exposure": "direct" },
     "017091": { "portfolioCode": "景顺长城纳指科技ETF", "sourceCode": "159509", "exposure": "look-through" },
     "040046": { "portfolioCode": "华安纳指ETF", "sourceCode": "159632", "exposure": "look-through" },
     "014978": { "portfolioCode": "华安纳指ETF", "sourceCode": "159632", "exposure": "look-through" },
@@ -60,6 +61,11 @@
     {
       "code": "001668", "name": "汇添富全球移动互联混合（QDII）人民币A", "manager": "汇添富基金", "adapter": "huitianfu", "index": "globalMobileInternet", "currency": "CNY", "shareClass": "A",
       "officialSources": [{ "url": "https://www.99fund.com/main/products/pofund/index.shtml", "kind": "current-status", "channel": { "kind": "direct", "access": "web" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "005698", "name": "华夏全球科技先锋混合（QDII）A人民币", "manager": "华夏基金", "adapter": "chinaamc", "index": "globalTechnology", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://fund.chinaamc.com/fund/005698/index.shtml", "kind": "product", "channel": { "kind": "direct", "access": "web" } }],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {

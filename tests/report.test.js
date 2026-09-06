@@ -135,3 +135,11 @@ test("renders the global mobile internet index label", () => {
   assert.match(html, /QDII Monitor \/ 全球移动互联 \/ 001668/);
   assert.doesNotMatch(html, /QDII Monitor \/ 纳斯达克100 \/ 001668/);
 });
+
+test("renders the global technology index label", () => {
+  const source = payload();
+  source.rows = source.rows.map((row) => ({ ...row, fundCode: "005698", fundName: "华夏全球科技先锋混合（QDII）A人民币", manager: "华夏基金", index: "globalTechnology" }));
+  const html = renderFundHtml(source, "005698");
+  assert.match(html, /QDII Monitor \/ 全球科技先锋 \/ 005698/);
+  assert.doesNotMatch(html, /QDII Monitor \/ 纳斯达克100 \/ 005698/);
+});

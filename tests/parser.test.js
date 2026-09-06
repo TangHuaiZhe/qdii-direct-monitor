@@ -37,6 +37,10 @@ test("decodes GBK official pages according to the response charset", async () =>
   const bytes = Buffer.concat([Buffer.from("<p>"), Buffer.from([0xc9, 0xea, 0xb9, 0xba]), Buffer.from("</p>")]);
   assert.equal(await resourceToText({ bytes, contentType: "text/html; charset=GBK", finalUrl: "https://example.test" }), "申购");
 });
+test("detects GBK official pages from their HTML meta charset", async () => {
+  const bytes = Buffer.concat([Buffer.from('<meta charset="GBK"><p>'), Buffer.from([0xc9, 0xea, 0xb9, 0xba]), Buffer.from("</p>")]);
+  assert.equal(await resourceToText({ bytes, contentType: "text/html", finalUrl: "https://example.test" }), "申购");
+});
 test("infers distinct direct and agency scopes", () => {
   const channels = inferChannels("线上直销系统限额100元，其他销售渠道暂停");
   assert.deepEqual(channels, [{ kind: "direct", access: "web" }, { kind: "agency", access: "all" }]);

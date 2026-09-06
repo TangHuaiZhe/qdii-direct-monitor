@@ -8,7 +8,7 @@ const PINYIN = {
   成: "cheng", 南: "nan", 指: "zhi", 数: "shu", 国: "guo", 泰: "tai", 宝: "bao",
   盈: "ying", 柏: "bai", 瑞: "rui", 建: "jian", 信: "xin", 摩: "mo", 根: "gen",
   万: "wan", 家: "jia", 天: "tian", 弘: "hong", 美: "mei", 元: "yuan", 景: "jing",
-  顺: "shun", 长: "chang", 城: "cheng", 科: "ke", 技: "ji", 全: "quan", 球: "qiu", 移: "yi", 动: "dong", 互: "hu", 混: "hun", 合: "he"
+  顺: "shun", 长: "chang", 城: "cheng", 科: "ke", 技: "ji", 全: "quan", 球: "qiu", 移: "yi", 动: "dong", 互: "hu", 混: "hun", 合: "he", 夏: "xia", 先: "xian", 锋: "feng"
 };
 
 function compact(value) {

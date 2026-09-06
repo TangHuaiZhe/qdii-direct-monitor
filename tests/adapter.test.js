@@ -6,6 +6,7 @@ const huitianfu = require("../src/adapters/huitianfu");
 const southern = require("../src/adapters/southern");
 const tianhong = require("../src/adapters/tianhong");
 const igwfmc = require("../src/adapters/igwfmc");
+const chinaamc = require("../src/adapters/chinaamc");
 const { adapters } = require("../src/adapters");
 
 test("official adapter produces a direct observation with evidence", async () => {
@@ -93,7 +94,17 @@ test("Tianhong page shape changes fail closed", async () => {
 });
 
 test("new manager adapters are registered", () => {
-  for (const id of ["guotai", "baoying", "huataipb", "ccb", "jpmorgan", "wanjia", "tianhong", "igwfmc"]) assert.ok(adapters[id], id);
+  for (const id of ["guotai", "baoying", "huataipb", "ccb", "jpmorgan", "wanjia", "tianhong", "igwfmc", "chinaamc"]) assert.ok(adapters[id], id);
+});
+
+test("华夏 adapter parses an open official subscription status", async () => {
+  const context = { observedAt: "2026-09-06T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => ({ bytes: Buffer.from("005698 华夏全球科技先锋混合(QDII)A(人民币) 交易状态 开放申购"), contentType: "text/html", finalUrl: url }) };
+  const rows = await chinaamc.collect({ code: "005698", name: "华夏全球科技先锋混合（QDII）A人民币", manager: "华夏基金", index: "globalTechnology", currency: "CNY", shareClass: "A",
+    officialSources: [{ url: "https://fund.chinaamc.com/fund/005698/index.shtml", kind: "product", channel: { kind: "direct", access: "web" } }] }, context);
+  assert.equal(rows[0].status, "open");
+  assert.equal(rows[0].index, "globalTechnology");
+  assert.equal(rows[0].reliability.grade, "A");
 });
 
 test("config tracks 广发美元A Nasdaq-100 share 000055", () => {
@@ -178,6 +189,32 @@ test("config tracks 汇添富全球移动互联人民币A share 001668", () => {
     source: {
       url: "https://www.99fund.com/main/products/pofund/index.shtml",
       kind: "current-status",
+      channel: { kind: "direct", access: "web" }
+    }
+  });
+});
+
+test("config tracks 华夏全球科技先锋人民币A share 005698", () => {
+  const config = require("../config/funds.example.json");
+  const fund = config.funds.find((item) => item.code === "005698");
+  assert.deepEqual(fund && {
+    name: fund.name,
+    manager: fund.manager,
+    adapter: fund.adapter,
+    index: fund.index,
+    currency: fund.currency,
+    shareClass: fund.shareClass,
+    source: fund.officialSources[0]
+  }, {
+    name: "华夏全球科技先锋混合（QDII）A人民币",
+    manager: "华夏基金",
+    adapter: "chinaamc",
+    index: "globalTechnology",
+    currency: "CNY",
+    shareClass: "A",
+    source: {
+      url: "https://fund.chinaamc.com/fund/005698/index.shtml",
+      kind: "product",
       channel: { kind: "direct", access: "web" }
     }
   });
