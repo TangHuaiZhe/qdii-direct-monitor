@@ -62,11 +62,12 @@ function parseAmount(text) {
 }
 
 function parseEffectiveDate(text) {
-  const value = normalizeExtractedText(text);
-  const match = value.match(/(?:暂停大额申购[^，。；]{0,40}?起始日|恢复大额申购[^，。；]{0,40}?起始日|自)\s*(20\d{2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/) ||
-    value.match(/公告送出日期[:：]?\s*(20\d{2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/);
-  if (!match) return null;
-  return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+  const value = normalizeExtractedText(text).replace(/\s+/g, "");
+  const matches = [...value.matchAll(/(?:(?:暂停|恢复)大额申购[^年月日]{0,50}?起始日|自)(20\d{2})年(\d{1,2})月(\d{1,2})日/g)];
+  const fallback = value.match(/公告送出日期[:：]?(20\d{2})年(\d{1,2})月(\d{1,2})日/);
+  const dates = (matches.length ? matches : (fallback ? [fallback] : [])).map((match) =>
+    `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`);
+  return dates.sort().at(-1) || null;
 }
 
 function parseShareAmount(text, fund) {

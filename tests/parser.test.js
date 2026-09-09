@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { focusText, inferChannels, parseAmount, parseShareAmount, parseStatus, resourceToText } = require("../src/parser");
+const { focusText, inferChannels, parseAmount, parseEffectiveDate, parseShareAmount, parseStatus, resourceToText } = require("../src/parser");
 
 test("parses Chinese ten-thousand amount", () => assert.equal(parseAmount("单日单个基金账户累计申购金额不超过 1 万元").amount, 10000));
 test("parses direct product-page wording", () => {
@@ -32,6 +32,10 @@ test("maps distinct share-class amounts by fund code", () => {
 });
 test("parses a PDF sentence using the RMB-yuan unit", () => {
   assert.deepEqual(parseAmount("单日单 个基金账户的申购金额不应超过 10 人民币元"), { amount: 10, currency: "CNY" });
+});
+test("uses the newest business date when a notice cites the prior limit", () => {
+  const text = "公告送出日期：2026 年 09 月 04 日 自 2026 年 09 月 03 日起限制金额为2000元；自 2026 年 09 月 04 日起调整限制金额为10元";
+  assert.equal(parseEffectiveDate(text), "2026-09-04");
 });
 test("decodes GBK official pages according to the response charset", async () => {
   const bytes = Buffer.concat([Buffer.from("<p>"), Buffer.from([0xc9, 0xea, 0xb9, 0xba]), Buffer.from("</p>")]);

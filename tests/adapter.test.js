@@ -51,6 +51,16 @@ test("Huitianfu uses the current A/C/E share-table values instead of an older am
   }
 });
 
+test("funds with official notice indexes do not also pin stale notice PDFs", () => {
+  const config = require("../config/funds.example.json");
+  for (const fund of config.funds) {
+    const indexes = fund.officialSources.filter((source) => source.kind === "notice-index");
+    if (!indexes.length) continue;
+    assert.ok(indexes.every((source) => source.followLinks === true), fund.code);
+    assert.equal(fund.officialSources.filter((source) => source.kind === "notice").length, 0, fund.code);
+  }
+});
+
 test("Huitianfu parses the current global mobile internet subscription status", async () => {
   const text = "001668 汇添富全球移动互联混合（QDII）人民币A 2026-09-05 5.2195 5.2195 正常 申购 定投";
   const context = { observedAt: "2026-09-06T00:00:00Z", warnings: [], timeoutMs: 10,

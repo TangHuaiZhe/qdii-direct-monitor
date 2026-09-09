@@ -30,6 +30,25 @@ test("dated notice wins over an undated same-grade record", () => {
   assert.equal(rows[0].limitAmount, 20000);
 });
 
+test("newer official notice wins over an older higher-grade notice", () => {
+  const base = { fundCode: "018966", fundName: "x", manager: "x", currency: "CNY", shareClass: "A", channel: { kind: "direct", access: "all" }, status: "limited", observedAt: "2026-09-09T00:00:00Z" };
+  const rows = preferEvidence([
+    { ...base, limitAmount: 10000, effectiveDate: "2026-09-02", source: { kind: "notice", url: "https://example.com/old.pdf" }, reliability: { grade: "B", reason: "explicit channel" } },
+    { ...base, limitAmount: 10, effectiveDate: "2026-09-04", source: { kind: "notice", url: "https://example.com/new.pdf" }, reliability: { grade: "C", reason: "fund-wide notice" } }
+  ]);
+  assert.equal(rows[0].limitAmount, 10);
+});
+
+test("newer D-grade notice never overrides a trusted notice", () => {
+  const base = { fundCode: "018966", fundName: "x", manager: "x", currency: "CNY", shareClass: "A", channel: { kind: "direct", access: "all" }, observedAt: "2026-09-09T00:00:00Z", source: { kind: "notice", url: "https://example.com/x.pdf" } };
+  const rows = preferEvidence([
+    { ...base, status: "limited", limitAmount: 10000, effectiveDate: "2026-09-02", reliability: { grade: "B", reason: "trusted" } },
+    { ...base, status: "unknown", limitAmount: null, effectiveDate: "2026-09-04", reliability: { grade: "D", reason: "failed" } }
+  ]);
+  assert.equal(rows[0].limitAmount, 10000);
+  assert.equal(rows[0].reliability.grade, "B");
+});
+
 test("D-grade fetch failure does not overwrite a trusted comparison baseline", () => {
   const base = { fundCode: "040046", fundName: "x", manager: "x", currency: "CNY", channel: { kind: "direct", access: "web" }, status: "limited", limitAmount: 100, observedAt: "a" };
   const before = buildSnapshot("a", [{ ...base, reliability: { grade: "A", reason: "official" } }]);

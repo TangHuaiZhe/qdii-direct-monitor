@@ -17,14 +17,22 @@ function effectiveTime(value) {
   return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
 }
 
+function prefersEvidence(row, prior) {
+  const gradeDifference = GRADE[row.reliability.grade] - GRADE[prior.reliability.grade];
+  const rowTime = effectiveTime(row.effectiveDate);
+  const priorTime = effectiveTime(prior.effectiveDate);
+  const trustedNotices = row.reliability.grade !== "D" && prior.reliability.grade !== "D" &&
+    row.source?.kind === "notice" && prior.source?.kind === "notice";
+  if (trustedNotices && rowTime !== priorTime) return rowTime > priorTime;
+  return gradeDifference > 0 || (gradeDifference === 0 && rowTime > priorTime);
+}
+
 function preferEvidence(rows) {
   const selected = new Map();
   for (const raw of rows) {
     const row = normalizeObservation(raw);
     const prior = selected.get(row.key);
-    const gradeDifference = prior ? GRADE[row.reliability.grade] - GRADE[prior.reliability.grade] : 1;
-    const effectiveDifference = prior ? effectiveTime(row.effectiveDate) - effectiveTime(prior.effectiveDate) : 0;
-    if (!prior || gradeDifference > 0 || (gradeDifference === 0 && effectiveDifference > 0)) selected.set(row.key, row);
+    if (!prior || prefersEvidence(row, prior)) selected.set(row.key, row);
   }
   return [...selected.values()].sort((a, b) => a.key.localeCompare(b.key));
 }
