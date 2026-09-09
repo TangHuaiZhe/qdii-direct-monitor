@@ -12,12 +12,19 @@ const { readJson, saveRun } = require("./store");
 
 const GRADE = { A: 4, B: 3, C: 2, D: 1 };
 
+function effectiveTime(value) {
+  const parsed = Date.parse(value || "");
+  return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
+}
+
 function preferEvidence(rows) {
   const selected = new Map();
   for (const raw of rows) {
     const row = normalizeObservation(raw);
     const prior = selected.get(row.key);
-    if (!prior || GRADE[row.reliability.grade] > GRADE[prior.reliability.grade]) selected.set(row.key, row);
+    const gradeDifference = prior ? GRADE[row.reliability.grade] - GRADE[prior.reliability.grade] : 1;
+    const effectiveDifference = prior ? effectiveTime(row.effectiveDate) - effectiveTime(prior.effectiveDate) : 0;
+    if (!prior || gradeDifference > 0 || (gradeDifference === 0 && effectiveDifference > 0)) selected.set(row.key, row);
   }
   return [...selected.values()].sort((a, b) => a.key.localeCompare(b.key));
 }

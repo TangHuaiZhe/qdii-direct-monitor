@@ -12,6 +12,24 @@ test("higher-grade evidence wins for the same channel key", () => {
   assert.equal(rows[0].limitAmount, 1000);
 });
 
+test("newer effective notice wins when evidence grades are equal", () => {
+  const base = { fundCode: "019441", fundName: "x", manager: "x", currency: "CNY", shareClass: "A", channel: { kind: "direct", access: "all" }, status: "limited", observedAt: "2026-09-09T00:00:00Z", reliability: { grade: "B", reason: "official" } };
+  const rows = preferEvidence([
+    { ...base, limitAmount: 10, effectiveDate: "2026-07-09" },
+    { ...base, limitAmount: 20000, effectiveDate: "2026-09-09" }
+  ]);
+  assert.equal(rows[0].limitAmount, 20000);
+});
+
+test("dated notice wins over an undated same-grade record", () => {
+  const base = { fundCode: "019441", fundName: "x", manager: "x", currency: "CNY", shareClass: "A", channel: { kind: "direct", access: "all" }, status: "limited", observedAt: "2026-09-09T00:00:00Z", reliability: { grade: "B", reason: "official" } };
+  const rows = preferEvidence([
+    { ...base, limitAmount: 10 },
+    { ...base, limitAmount: 20000, effectiveDate: "2026-09-09" }
+  ]);
+  assert.equal(rows[0].limitAmount, 20000);
+});
+
 test("D-grade fetch failure does not overwrite a trusted comparison baseline", () => {
   const base = { fundCode: "040046", fundName: "x", manager: "x", currency: "CNY", channel: { kind: "direct", access: "web" }, status: "limited", limitAmount: 100, observedAt: "a" };
   const before = buildSnapshot("a", [{ ...base, reliability: { grade: "A", reason: "official" } }]);

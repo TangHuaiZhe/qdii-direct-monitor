@@ -1,7 +1,7 @@
 "use strict";
 
 const { fetchResource } = require("../http");
-const { extractPdfLinks, extractRelevantLinks, focusText, inferChannels, parseAmount, parseShareAmount, parseStatus, resourceToHtml, resourceToText } = require("../parser");
+const { extractPdfLinks, extractRelevantLinks, focusText, inferChannels, parseAmount, parseEffectiveDate, parseShareAmount, parseStatus, resourceToHtml, resourceToText } = require("../parser");
 
 class OfficialDirectAdapter {
   constructor(spec) { Object.assign(this, spec); }
@@ -26,7 +26,7 @@ class OfficialDirectAdapter {
     return channels.filter((channel) => channel.kind === "direct").map((channel) => ({
       fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", currency: amount?.currency || fund.currency || "CNY",
       shareClass: fund.shareClass || "", channel, status, limitAmount: amount?.amount || null,
-      observedAt, effectiveDate: source.effectiveDate || null,
+      observedAt, effectiveDate: source.effectiveDate || parseEffectiveDate(text),
       salesUrl: this.salesUrl(fund),
       source: { url: resource.finalUrl, kind: source.kind || "notice", adapter: this.id },
       reliability: { grade: status === "unknown" ? "D" : grade, reason: status === "unknown" ? "page fetched but current channel limit was not safely parsed" : this.reliabilityReason(source, explicitChannel) },

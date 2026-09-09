@@ -7,6 +7,7 @@ const southern = require("../src/adapters/southern");
 const tianhong = require("../src/adapters/tianhong");
 const igwfmc = require("../src/adapters/igwfmc");
 const chinaamc = require("../src/adapters/chinaamc");
+const wanjia = require("../src/adapters/wanjia");
 const { adapters } = require("../src/adapters");
 
 test("official adapter produces a direct observation with evidence", async () => {
@@ -92,6 +93,42 @@ test("Tianhong page shape changes fail closed", async () => {
   assert.equal(rows[0].status, "unknown");
   assert.equal(rows[0].limitAmount, null);
   assert.equal(rows[0].reliability.grade, "D");
+});
+
+test("Wanjia separates the current direct limit from the agency limit", async () => {
+  const text = "公告送出日期：2026年9月9日 暂停大额申购起始日 2026年9月9日 下属分级基金的交易代码 019441 019442 下属分级基金的限制申购金额（单位：人民币元）5,000 5,000 万家纳斯达克100指数发起式（QDII）A类份额和C类份额代销渠道单日单个基金账户累计金额限制调整为5,000元；本公司直销渠道单日单个基金账户累计金额限制为2 0,000元（A类、C类份额分别计算）。";
+  const context = { observedAt: "2026-09-09T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => ({ bytes: Buffer.from(text), contentType: "text/html", finalUrl: url }) };
+  for (const [code, shareClass] of [["019441", "A"], ["019442", "C"]]) {
+    const rows = await wanjia.collect({ code, name: `万家纳指${shareClass}`, manager: "万家基金", currency: "CNY", shareClass,
+      officialSources: [{ url: "https://www.wjasset.com/x", kind: "notice" }] }, context);
+    assert.equal(rows[0].status, "limited");
+    assert.equal(rows[0].limitAmount, 20000);
+    assert.equal(rows[0].effectiveDate, "2026-09-09");
+    assert.equal(rows[0].channel.kind, "direct");
+  }
+});
+
+test("Wanjia channel-split notice shape changes fail closed", async () => {
+  const text = "019441 019442 下属分级基金的限制申购金额（单位：人民币元）5,000 5,000 暂停大额申购 代销渠道累计金额限制为5,000元；直销渠道额度请见销售页面。";
+  const context = { observedAt: "2026-09-09T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => ({ bytes: Buffer.from(text), contentType: "text/html", finalUrl: url }) };
+  const rows = await wanjia.collect({ code: "019441", name: "万家纳指A", manager: "万家基金", currency: "CNY", shareClass: "A",
+    officialSources: [{ url: "https://www.wjasset.com/x", kind: "notice" }] }, context);
+  assert.equal(rows[0].status, "unknown");
+  assert.equal(rows[0].limitAmount, null);
+  assert.equal(rows[0].reliability.grade, "D");
+});
+
+test("Wanjia config follows the official notice index instead of pinning an old PDF", () => {
+  const config = require("../config/funds.example.json");
+  for (const code of ["019441", "019442"]) {
+    const fund = config.funds.find((item) => item.code === code);
+    assert.equal(fund.officialSources.length, 1);
+    assert.equal(fund.officialSources[0].kind, "notice-index");
+    assert.equal(fund.officialSources[0].followLinks, true);
+    assert.doesNotMatch(fund.officialSources[0].url, /\.pdf$/i);
+  }
 });
 
 test("new manager adapters are registered", () => {

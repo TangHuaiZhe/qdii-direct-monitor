@@ -61,6 +61,14 @@ function parseAmount(text) {
   return null;
 }
 
+function parseEffectiveDate(text) {
+  const value = normalizeExtractedText(text);
+  const match = value.match(/(?:暂停大额申购[^，。；]{0,40}?起始日|恢复大额申购[^，。；]{0,40}?起始日|自)\s*(20\d{2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/) ||
+    value.match(/公告送出日期[:：]?\s*(20\d{2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/);
+  if (!match) return null;
+  return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+}
+
 function parseShareAmount(text, fund) {
   const value = normalizeExtractedText(text);
   const codeRows = [...value.matchAll(/下属(?:基金份额|分级基金)的(?:交易)?代码\s+((?:\d{6}\s+){1,7}\d{6})/g)];
@@ -132,4 +140,4 @@ function extractPdfLinks(html, baseUrl) {
   return [...new Set(links)].slice(0, 2);
 }
 
-module.exports = { clean, extractPdfLinks, extractRelevantLinks, focusText, htmlToText, inferChannels, normalizeExtractedText, parseAmount, parseShareAmount, parseStatus, resourceToHtml, resourceToText };
+module.exports = { clean, extractPdfLinks, extractRelevantLinks, focusText, htmlToText, inferChannels, normalizeExtractedText, parseAmount, parseEffectiveDate, parseShareAmount, parseStatus, resourceToHtml, resourceToText };
