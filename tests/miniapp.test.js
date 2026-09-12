@@ -88,6 +88,16 @@ test("miniapp filters by share class and sorts by fee", () => {
   assert.deepEqual(filterAndSortFunds(funds, { sort: "fee" }).map((fund) => fund.code), ["014978", "040046"]);
 });
 
+test("miniapp preserves and filters the explicit active/passive strategy", () => {
+  const funds = buildFunds({ rows: [
+    row({ strategy: "passive" }),
+    row({ fundCode: "001668", fundName: "汇添富全球移动互联混合（QDII）人民币A", strategy: "active" })
+  ], fees: [] });
+  assert.equal(funds[0].strategyLabel, "被动");
+  assert.equal(funds[1].strategyLabel, "主动");
+  assert.deepEqual(filterAndSortFunds(funds, { strategy: "active" }).map((fund) => fund.code), ["001668"]);
+});
+
 test("miniapp searches fund names and managers by full pinyin or initials", () => {
   const funds = buildFunds({ rows: [
     row(),

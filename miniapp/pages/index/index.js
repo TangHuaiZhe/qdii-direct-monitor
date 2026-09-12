@@ -20,6 +20,7 @@ Page({
     totalCount: 0,
     purchasableCount: 0,
     query: "",
+    strategy: "全部",
     shareClass: "全部",
     purchasableOnly: false,
     sortLabels: SORT_LABELS,
@@ -64,6 +65,7 @@ Page({
     const sort = SORT_VALUES[this.data.sortIndex] || "amount";
     const visibleFunds = filterAndSortFunds(this.data.funds, {
       query: this.data.query,
+      strategy: this.data.strategy,
       shareClass: this.data.shareClass,
       purchasableOnly: this.data.purchasableOnly,
       sort
@@ -77,6 +79,10 @@ Page({
 
   onShareClass(event) {
     this.setData({ shareClass: event.currentTarget.dataset.value }, () => this.applyFilters());
+  },
+
+  onStrategy(event) {
+    this.setData({ strategy: event.currentTarget.dataset.value }, () => this.applyFilters());
   },
 
   onPurchasableChange(event) {

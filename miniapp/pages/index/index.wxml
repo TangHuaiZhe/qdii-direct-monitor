@@ -39,6 +39,13 @@
       </view>
       <scroll-view class="chips" scroll-x enhanced show-scrollbar="{{false}}">
         <view class="chip-row">
+          <button class="chip {{strategy === '全部' ? 'active' : ''}}" data-value="全部" bindtap="onStrategy">全部</button>
+          <button class="chip {{strategy === 'passive' ? 'active' : ''}}" data-value="passive" bindtap="onStrategy">被动基金</button>
+          <button class="chip {{strategy === 'active' ? 'active' : ''}}" data-value="active" bindtap="onStrategy">主动基金</button>
+        </view>
+      </scroll-view>
+      <scroll-view class="chips" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="chip-row">
           <button class="chip {{shareClass === '全部' ? 'active' : ''}}" data-value="全部" bindtap="onShareClass">全部</button>
           <button class="chip {{shareClass === 'A' ? 'active' : ''}}" data-value="A" bindtap="onShareClass">A 类</button>
           <button class="chip {{shareClass === 'C' ? 'active' : ''}}" data-value="C" bindtap="onShareClass">C 类</button>
@@ -61,7 +68,7 @@
           <text class="index-chip">NDX</text>
           <view>
             <view class="fund-name">{{item.name}}</view>
-            <view class="fund-meta">{{item.code}} · {{item.manager}} · {{item.shareClass}} 类</view>
+            <view class="fund-meta">{{item.code}} · {{item.manager}} · {{item.strategyLabel}} · {{item.shareClass}} 类</view>
           </view>
         </view>
         <text class="status {{item.statusClass}}">{{item.statusLabel}}</text>

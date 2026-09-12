@@ -157,6 +157,12 @@ test("every configured fund has a secure official direct website entry", () => {
   }
 });
 
+test("every configured fund has an explicit active/passive strategy", () => {
+  const config = require("../config/funds.example.json");
+  assert.ok(config.funds.every((fund) => ["active", "passive"].includes(fund.strategy)));
+  assert.deepEqual(config.funds.filter((fund) => fund.strategy === "active").map((fund) => fund.code), ["001668", "005698"]);
+});
+
 test("华夏 adapter parses an open official subscription status", async () => {
   const context = { observedAt: "2026-09-06T00:00:00Z", warnings: [], timeoutMs: 10,
     fetchResource: async (url) => ({ bytes: Buffer.from("005698 华夏全球科技先锋混合(QDII)A(人民币) 交易状态 开放申购"), contentType: "text/html", finalUrl: url }) };

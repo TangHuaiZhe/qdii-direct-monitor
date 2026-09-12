@@ -20,7 +20,11 @@ function payload(overrides = {}) {
 }
 
 test("renders a self-contained Chinese HTML report", () => {
-  const html = renderHtml(payload());
+  const source = payload({ rows: [
+    { ...payload().rows[0], strategy: "passive" },
+    { ...payload().rows[0], fundCode: "001668", fundName: "主动示例基金", strategy: "active" }
+  ] });
+  const html = renderHtml(source);
   assert.match(html, /<!doctype html>/);
   assert.match(html, /QDII 申购额度与费率/);
   assert.match(html, /网上直销/);
@@ -44,6 +48,9 @@ test("renders a self-contained Chinese HTML report", () => {
   assert.match(html, /columnSort\.direction === 1/);
   assert.match(html, /columnSort = null; sort\.value = "amount"/);
   assert.match(html, /placeholder="搜索名称、代码、公司或拼音"/);
+  assert.match(html, /data-strategy-filter="passive"/);
+  assert.match(html, /data-strategy-filter="active"/);
+  assert.match(html, /strategy === "全部"/);
   assert.match(html, /data-search="[^"]*huaan[^"]*hajj/);
   assert.match(html, /class="index-chip manager-tone-\d" aria-hidden="true">华<\/span>/);
   assert.match(html, /\.manager-tone-5\{background:#f7e6df;color:#8a4933\}/);

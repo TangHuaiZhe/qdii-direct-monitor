@@ -4,6 +4,7 @@ const STATUS = new Set(["open", "limited", "suspended", "unavailable", "unknown"
 const DIRECT_ACCESS = new Set(["web", "app", "counter", "all"]);
 const AGENCY_ACCESS = new Set(["eastmoney", "alipay", "bank", "broker", "all"]);
 const GRADES = new Set(["A", "B", "C", "D"]);
+const STRATEGIES = new Set(["active", "passive", "unknown"]);
 
 function channelKey(channel) {
   return `${channel.kind}/${channel.access}${channel.name ? `/${channel.name}` : ""}`;
@@ -18,6 +19,7 @@ function normalizeObservation(input) {
   if (!/^\d{6}$/.test(String(input.fundCode || ""))) throw new Error("invalid fundCode");
   if (!STATUS.has(input.status)) throw new Error(`invalid status: ${input.status}`);
   if (!input.channel || !["direct", "agency"].includes(input.channel.kind)) throw new Error("invalid channel kind");
+  if (!STRATEGIES.has(input.strategy || "unknown")) throw new Error(`invalid strategy: ${input.strategy}`);
   const allowed = input.channel.kind === "direct" ? DIRECT_ACCESS : AGENCY_ACCESS;
   if (!allowed.has(input.channel.access)) throw new Error(`invalid channel access: ${input.channel.access}`);
   if (!input.reliability || !GRADES.has(input.reliability.grade)) throw new Error("invalid reliability grade");
@@ -29,6 +31,7 @@ function normalizeObservation(input) {
     fundName: String(input.fundName || ""),
     manager: String(input.manager || ""),
     index: input.index || "nasdaq100",
+    strategy: input.strategy || "unknown",
     currency: input.currency || "CNY",
     shareClass: input.shareClass || "",
     channel: { kind: input.channel.kind, access: input.channel.access, ...(input.channel.name ? { name: input.channel.name } : {}) },

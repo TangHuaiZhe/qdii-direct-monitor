@@ -24,7 +24,7 @@ class OfficialDirectAdapter {
     const explicitChannel = Boolean(source.channels || source.channel || inferredChannels.some((channel) => channel.kind === "direct"));
     const grade = ["product", "current-status"].includes(source.kind) && explicitChannel ? "A" : (explicitChannel ? "B" : "C");
     return channels.filter((channel) => channel.kind === "direct").map((channel) => ({
-      fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", currency: amount?.currency || fund.currency || "CNY",
+      fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", strategy: fund.strategy || "unknown", currency: amount?.currency || fund.currency || "CNY",
       shareClass: fund.shareClass || "", channel, status, limitAmount: amount?.amount || null,
       observedAt, effectiveDate: source.effectiveDate || parseEffectiveDate(fullText),
       salesUrl: this.salesUrl(fund),
@@ -73,7 +73,7 @@ class OfficialDirectAdapter {
   }
 
   unknownRow(fund, observedAt, url) {
-    return { fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", currency: fund.currency || "CNY", shareClass: fund.shareClass || "",
+    return { fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", strategy: fund.strategy || "unknown", currency: fund.currency || "CNY", shareClass: fund.shareClass || "",
       channel: { kind: "direct", access: "all" }, status: "unknown", limitAmount: null, observedAt,
       salesUrl: this.salesUrl(fund),
       source: url ? { url, kind: "fallback", adapter: this.id } : null,

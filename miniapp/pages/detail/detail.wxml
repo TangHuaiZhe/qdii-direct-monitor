@@ -5,7 +5,7 @@
     <view class="hero">
       <text class="code">{{fund.code}}</text>
       <view class="name">{{fund.name}}</view>
-      <view class="meta">{{fund.manager}} · {{fund.shareClass}} 类 · {{observedAt}}</view>
+      <view class="meta">{{fund.manager}} · {{fund.strategyLabel}}基金 · {{fund.shareClass}} 类 · {{observedAt}}</view>
       <view class="hero-metrics">
         <view><text class="hero-value">{{fund.directAmountLabel}}</text><text>最高可信直销展示</text></view>
         <view><text class="hero-value">{{fund.agencyAmountLabel}}</text><text>最高可信代销展示</text></view>

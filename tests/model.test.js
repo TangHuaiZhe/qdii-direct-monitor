@@ -23,6 +23,11 @@ test("limited status requires amount", () => {
   assert.throws(() => normalizeObservation(row({ limitAmount: null })), /positive/);
 });
 
+test("normalizes an explicit fund strategy", () => {
+  assert.equal(normalizeObservation(row({ strategy: "active" })).strategy, "active");
+  assert.throws(() => normalizeObservation(row({ strategy: "tactical" })), /invalid strategy/);
+});
+
 test("snapshot preserves the direct sales URL independently of evidence", () => {
   const normalized = normalizeObservation(row({
     salesUrl: "https://www.huaan.com.cn/funds/040046/index.shtml",

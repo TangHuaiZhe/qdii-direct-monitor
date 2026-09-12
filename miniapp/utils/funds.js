@@ -10,6 +10,8 @@ const STATUS_LABELS = {
   unknown: "状态未知"
 };
 
+const STRATEGY_LABELS = { active: "主动", passive: "被动", unknown: "未分类" };
+
 const ACCESS_LABELS = {
   web: "网上直销",
   app: "基金公司 APP",
@@ -157,6 +159,8 @@ function buildFunds(payload) {
       code,
       name: first.fundName,
       manager: first.manager,
+      strategy: first.strategy || "unknown",
+      strategyLabel: STRATEGY_LABELS[first.strategy] || STRATEGY_LABELS.unknown,
       shareClass: first.shareClass || "其他",
       currency: first.currency || "CNY",
       status,
@@ -183,9 +187,11 @@ function buildFunds(payload) {
 function filterAndSortFunds(funds, filters = {}) {
   const query = normalizeSearchQuery(filters.query);
   const shareClass = filters.shareClass || "全部";
+  const strategy = filters.strategy || "全部";
   const visible = funds.filter((fund) =>
     (!query || fund.searchText.includes(query))
     && (shareClass === "全部" || fund.shareClass === shareClass)
+    && (strategy === "全部" || fund.strategy === strategy)
     && (!filters.purchasableOnly || fund.purchasable)
   );
   const sort = filters.sort || "amount";
