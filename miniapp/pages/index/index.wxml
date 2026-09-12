@@ -68,7 +68,7 @@
           <text class="index-chip">NDX</text>
           <view>
             <view class="fund-name">{{item.name}}</view>
-            <view class="fund-meta">{{item.code}} · {{item.manager}} · {{item.strategyLabel}} · {{item.shareClass}} 类</view>
+            <view class="fund-meta">{{item.code}} · {{item.manager}} · <text class="strategy-badge strategy-{{item.strategy}}">{{item.strategyLabel}}</text> · {{item.shareClass}} 类</view>
           </view>
         </view>
         <text class="status {{item.statusClass}}">{{item.statusLabel}}</text>

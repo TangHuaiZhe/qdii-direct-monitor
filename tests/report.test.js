@@ -51,6 +51,9 @@ test("renders a self-contained Chinese HTML report", () => {
   assert.match(html, /data-strategy-filter="passive"/);
   assert.match(html, /data-strategy-filter="active"/);
   assert.match(html, /strategy === "全部"/);
+  assert.match(html, /strategy-badge strategy-passive/);
+  assert.match(html, /\.strategy-active\{background:#fff0d6/);
+  assert.match(html, /\.strategy-passive\{background:#e5f0ff/);
   assert.match(html, /data-search="[^"]*huaan[^"]*hajj/);
   assert.match(html, /class="index-chip manager-tone-\d" aria-hidden="true">华<\/span>/);
   assert.match(html, /\.manager-tone-5\{background:#f7e6df;color:#8a4933\}/);

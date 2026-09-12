@@ -32,7 +32,7 @@
 .fund-identity { display: flex; min-width: 0; gap: 16rpx; }
 .index-chip { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 68rpx; height: 68rpx; border-radius: 18rpx; background: #e8f3ed; color: #137552; font-size: 19rpx; font-weight: 900; }
 .fund-name { display: -webkit-box; overflow: hidden; color: #19221d; font-size: 27rpx; line-height: 1.35; font-weight: 750; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.fund-meta { margin-top: 7rpx; color: #79837c; font-size: 20rpx; }
+.fund-meta { margin-top: 7rpx; color: #79837c; font-size: 20rpx; }.strategy-badge { display: inline-block; margin: 0 5rpx; padding: 3rpx 10rpx; border-radius: 999rpx; font-size: 18rpx; line-height: 1.35; font-weight: 800; }.strategy-active { color: #9a5700; background: #fff0d6; border: 1rpx solid #f0cd8f; }.strategy-passive { color: #1d5f9d; background: #e5f0ff; border: 1rpx solid #bdd7f2; }.strategy-unknown { color: #667068; background: #eef0ee; border: 1rpx solid #d9ddda; }
 .status { flex: 0 0 auto; padding: 6rpx 12rpx; border-radius: 999rpx; font-size: 19rpx; font-weight: 700; }
 .status-open { background: #e5f5ed; color: #137552; }.status-limited { background: #fff3d6; color: #9b6400; }.status-suspended,.status-unavailable { background: #fdeaea; color: #aa3838; }.status-unknown { background: #edf0ed; color: #667068; }
 .best-line { display: flex; align-items: flex-end; justify-content: space-between; gap: 14rpx; margin: 22rpx 0 18rpx; padding: 20rpx; border-radius: 20rpx; background: #edf7f1; }
