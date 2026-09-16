@@ -19,6 +19,8 @@
     "001668": { "portfolioCode": "汇添富全球移动互联混合", "sourceCode": "001668", "exposure": "direct" },
     "005698": { "portfolioCode": "华夏全球科技先锋混合", "sourceCode": "005698", "exposure": "direct" },
     "017091": { "portfolioCode": "景顺长城纳指科技ETF", "sourceCode": "159509", "exposure": "look-through" },
+    "017093": { "portfolioCode": "景顺长城纳指科技ETF", "sourceCode": "159509", "exposure": "look-through" },
+    "019118": { "portfolioCode": "景顺长城纳指科技ETF", "sourceCode": "159509", "exposure": "look-through" },
     "040046": { "portfolioCode": "华安纳指ETF", "sourceCode": "159632", "exposure": "look-through" },
     "014978": { "portfolioCode": "华安纳指ETF", "sourceCode": "159632", "exposure": "look-through" },
     "000834": { "portfolioCode": "大成纳指ETF", "sourceCode": "159513", "exposure": "look-through" },
@@ -93,6 +95,16 @@
     {
       "code": "017091", "name": "景顺长城纳斯达克科技ETF联接（QDII）A人民币", "manager": "景顺长城基金", "adapter": "igwfmc", "index": "nasdaqTechnology", "strategy": "passive", "currency": "CNY", "shareClass": "A",
       "officialSources": [{ "url": "https://www.igwfmc.com/main/jjcp/product/017091/detail.html", "kind": "product", "channel": { "kind": "direct", "access": "all" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "017093", "name": "景顺长城纳斯达克科技ETF联接（QDII）C人民币", "manager": "景顺长城基金", "adapter": "igwfmc", "index": "nasdaqTechnology", "strategy": "passive", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{ "url": "https://www.igwfmc.com/main/jjcp/product/017093/detail.html", "kind": "product", "channel": { "kind": "direct", "access": "all" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "019118", "name": "景顺长城纳斯达克科技ETF联接（QDII）E人民币", "manager": "景顺长城基金", "adapter": "igwfmc", "index": "nasdaqTechnology", "strategy": "passive", "currency": "CNY", "shareClass": "E",
+      "officialSources": [{ "url": "https://www.igwfmc.com/main/jjcp/product/019118/detail.html", "kind": "product", "channel": { "kind": "direct", "access": "all" } }],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {

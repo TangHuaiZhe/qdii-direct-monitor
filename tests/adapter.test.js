@@ -208,30 +208,34 @@ test("景顺长城 adapter parses a closed official subscription status", async 
   assert.equal(rows[0].reliability.grade, "A");
 });
 
-test("config tracks 景顺长城 Nasdaq technology share 017091", () => {
+test("config tracks 景顺长城 Nasdaq technology A/C/E RMB shares", () => {
   const config = require("../config/funds.example.json");
-  const fund = config.funds.find((item) => item.code === "017091");
-  assert.deepEqual(fund && {
-    name: fund.name,
-    manager: fund.manager,
-    adapter: fund.adapter,
-    index: fund.index,
-    currency: fund.currency,
-    shareClass: fund.shareClass,
-    source: fund.officialSources[0]
-  }, {
-    name: "景顺长城纳斯达克科技ETF联接（QDII）A人民币",
-    manager: "景顺长城基金",
-    adapter: "igwfmc",
-    index: "nasdaqTechnology",
-    currency: "CNY",
-    shareClass: "A",
-    source: {
-      url: "https://www.igwfmc.com/main/jjcp/product/017091/detail.html",
-      kind: "product",
-      channel: { kind: "direct", access: "all" }
-    }
-  });
+  const shares = [["017091", "A"], ["017093", "C"], ["019118", "E"]];
+  for (const [code, shareClass] of shares) {
+    const fund = config.funds.find((item) => item.code === code);
+    assert.deepEqual(fund && {
+      name: fund.name,
+      manager: fund.manager,
+      adapter: fund.adapter,
+      index: fund.index,
+      currency: fund.currency,
+      shareClass: fund.shareClass,
+      source: fund.officialSources[0]
+    }, {
+      name: `景顺长城纳斯达克科技ETF联接（QDII）${shareClass}人民币`,
+      manager: "景顺长城基金",
+      adapter: "igwfmc",
+      index: "nasdaqTechnology",
+      currency: "CNY",
+      shareClass,
+      source: {
+        url: `https://www.igwfmc.com/main/jjcp/product/${code}/detail.html`,
+        kind: "product",
+        channel: { kind: "direct", access: "all" }
+      }
+    }, code);
+    assert.deepEqual(config.portfolioMappings[code], { portfolioCode: "景顺长城纳指科技ETF", sourceCode: "159509", exposure: "look-through" }, code);
+  }
 });
 
 test("config tracks 汇添富全球移动互联人民币A share 001668", () => {
