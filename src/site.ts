@@ -16,7 +16,7 @@ function escapeXml(value) {
   }[character]));
 }
 
-function buildSite(options = {}) {
+function buildSite(options: any = {}) {
   const dataDir = path.resolve(options.dataDir || "data");
   const siteDir = path.resolve(options.siteDir || "site");
   const socialImage = path.resolve(options.socialImage || "assets/og.png");
@@ -32,7 +32,7 @@ function buildSite(options = {}) {
   if (!fs.existsSync(socialImage)) throw new Error(`missing social preview image: ${socialImage}`);
   fs.copyFileSync(socialImage, path.join(siteDir, "og.png"));
   fs.writeFileSync(path.join(siteDir, ".nojekyll"), "", "utf8");
-  const payload = JSON.parse(fs.readFileSync(jsonSource, "utf8"));
+  const payload: any = JSON.parse(fs.readFileSync(jsonSource, "utf8"));
   const fundCodes = [...new Set((payload.rows || [])
     .map((row) => String(row.fundCode || ""))
     .filter((code) => /^\d{6}$/.test(code)))]

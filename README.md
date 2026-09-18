@@ -125,7 +125,7 @@ npm run build:site
 
 ```bash
 cp config/funds.example.json config/funds.local.json
-node src/cli.js run --config config/funds.local.json
+npm exec tsx src/cli.ts run --config config/funds.local.json
 ```
 
 持续运行（默认每 30 分钟，最低 5 分钟）：
@@ -137,9 +137,9 @@ npm run watch
 生产环境更建议使用系统 cron、launchd 或 CI 每次执行一次 `run`，避免一个常驻进程失效后无人发现。示例 cron（工作日 09:10、14:30、20:30）：
 
 ```cron
-10 9 * * 1-5 cd /absolute/path/qdii-direct-monitor && /absolute/path/node src/cli.js run --config config/funds.local.json
-30 14 * * 1-5 cd /absolute/path/qdii-direct-monitor && /absolute/path/node src/cli.js run --config config/funds.local.json
-30 20 * * 1-5 cd /absolute/path/qdii-direct-monitor && /absolute/path/node src/cli.js run --config config/funds.local.json
+10 9 * * 1-5 cd /absolute/path/qdii-direct-monitor && npm exec tsx src/cli.ts run --config config/funds.local.json
+30 14 * * 1-5 cd /absolute/path/qdii-direct-monitor && npm exec tsx src/cli.ts run --config config/funds.local.json
+30 20 * * 1-5 cd /absolute/path/qdii-direct-monitor && npm exec tsx src/cli.ts run --config config/funds.local.json
 ```
 
 ## 通知
@@ -213,9 +213,9 @@ npm test
 
 其中：
 
-- `src/cli.js` 负责一次完整运行，包括抓取、变化检测、通知和输出路径。
-- `src/collector.js` 负责调用基金公司直销适配器及天天基金等代销数据源。
-- `src/site.js` 把最新结果转换成首页、基金详情页、站点地图和 `robots.txt`。
+- `src/cli.ts` 负责一次完整运行，包括抓取、变化检测、通知和输出路径。
+- `src/collector.ts` 负责调用基金公司直销适配器及天天基金等代销数据源。
+- `src/site.ts` 把最新结果转换成首页、基金详情页、站点地图和 `robots.txt`。
 - GitHub Actions 缓存 `data/` 中的可信快照和历史，使下一次运行能够比较额度变化。
 - 测试失败时不会继续部署；单个数据源失败时会保留上一份可信值，并在页面告警中说明。
 - 运行完成后，GitHub Pages 会发布新的站点版本，通常比抓取结束晚几分钟。
@@ -289,8 +289,8 @@ npm test
 
 基金公司改版时通常只需：
 
-1. 更新对应 `src/adapters/*.js` 的默认入口或域名白名单。
-2. 如果页面措辞变化，在 `src/parser.js` 增加一个最小、带 fixture 的解析规则。
+1. 更新对应 `src/adapters/*.ts` 的默认入口或域名白名单。
+2. 如果页面措辞变化，在 `src/parser.ts` 增加一个最小、带 fixture 的解析规则。
 3. 用真实页面保存的脱敏 fixture 写测试，确认页面变形时仍返回 `unknown`。
 4. 先运行 `npm test`，再用 `--no-save` 做一次联网烟雾检查。
 

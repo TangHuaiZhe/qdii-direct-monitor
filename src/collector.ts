@@ -63,7 +63,7 @@ async function mapLimit(items, concurrency, iterator) {
   await Promise.all(workers); return result;
 }
 
-async function run(config, options = {}) {
+async function run(config: any, options: any = {}) {
   const observedAt = options.observedAt || new Date().toISOString();
   const warnings = [];
   const context = { observedAt, warnings, timeoutMs: config.fetch?.timeoutMs || 20000, fetchResource: options.fetchResource || fetchResource };
@@ -102,7 +102,7 @@ async function run(config, options = {}) {
   const fees = snapshot.fees || fetchedFees;
   const holdings = snapshot.holdings || fetchedHoldings;
   const changes = compareSnapshots(before, snapshot);
-  const payload = { schemaVersion: 3, observedAt, rows, fees, holdings, changes, warnings, health: { status: rows.some((r) => r.reliability.grade !== "D") ? "ok" : "degraded" }, snapshot };
+  const payload: any = { schemaVersion: 3, observedAt, rows, fees, holdings, changes, warnings, health: { status: rows.some((r) => r.reliability.grade !== "D") ? "ok" : "degraded" }, snapshot };
   const held = rows.filter((row) => {
     const prior = before?.byKey?.[row.key];
     return row.reliability.grade === "D" && prior && prior.reliability?.grade !== "D";

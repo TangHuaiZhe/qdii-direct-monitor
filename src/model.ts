@@ -26,7 +26,7 @@ function normalizeObservation(input) {
   if (input.status === "limited" && !(Number.isFinite(input.limitAmount) && input.limitAmount > 0)) {
     throw new Error("limited observation requires a positive limitAmount");
   }
-  const row = {
+  const row: any = {
     fundCode: String(input.fundCode),
     fundName: String(input.fundName || ""),
     manager: String(input.manager || ""),
@@ -61,10 +61,10 @@ function buildSnapshot(observedAt, rows, fees = [], holdings = []) {
   };
 }
 
-function compareSnapshots(before, after) {
+function compareSnapshots(before: any, after: any) {
   if (!before || !before.byKey) return [];
   const changes = [];
-  for (const [key, next] of Object.entries(after.byKey || {})) {
+  for (const [key, next] of Object.entries(after.byKey || {}) as [string, any][]) {
     const prior = before.byKey[key];
     if (!prior) { changes.push({ type: "channel-added", key, before: null, after: next }); continue; }
     if (prior.status !== next.status) { changes.push({ type: "status-changed", key, before: prior, after: next }); continue; }
@@ -74,7 +74,7 @@ function compareSnapshots(before, after) {
       changes.push({ type, key, before: prior, after: next });
     }
   }
-  for (const [key, prior] of Object.entries(before.byKey || {})) {
+  for (const [key, prior] of Object.entries(before.byKey || {}) as [string, any][]) {
     if (!after.byKey[key]) changes.push({ type: "channel-removed", key, before: prior, after: null });
   }
   return changes.sort((a, b) => a.key.localeCompare(b.key));

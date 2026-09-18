@@ -6,7 +6,7 @@ function hostAllowed(hostname, allowedHosts) {
   return allowedHosts.some((host) => hostname === host || hostname.endsWith(`.${host}`));
 }
 
-async function fetchResource(url, options = {}) {
+async function fetchResource(url, options: any = {}) {
   const target = new URL(url);
   if (target.protocol !== "https:" || target.username || target.password) throw new Error("source URL must be credential-free HTTPS");
   if (!hostAllowed(target.hostname, options.allowedHosts || [])) throw new Error(`source host is not allowed: ${target.hostname}`);

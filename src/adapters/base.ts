@@ -4,6 +4,7 @@ const { fetchResource } = require("../http");
 const { extractPdfLinks, extractRelevantLinks, focusText, inferChannels, parseAmount, parseEffectiveDate, parseShareAmount, parseStatus, resourceToHtml, resourceToText } = require("../parser");
 
 class OfficialDirectAdapter {
+  [key: string]: any;
   constructor(spec) { Object.assign(this, spec); }
 
   salesUrl(fund) {

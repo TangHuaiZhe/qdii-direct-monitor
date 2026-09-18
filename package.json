@@ -9,14 +9,21 @@
     "node": ">=22"
   },
   "scripts": {
-    "start": "node src/cli.js run --config config/funds.example.json",
-    "build:site": "node src/site.js",
-    "check:miniapp": "node scripts/check-miniapp.js",
-    "watch": "node src/cli.js watch --config config/funds.example.json",
-    "test": "node --test"
+    "start": "tsx src/cli.ts run --config config/funds.example.json",
+    "build:site": "tsx src/site.ts",
+    "check:miniapp": "tsx scripts/check-miniapp.ts",
+    "watch": "tsx src/cli.ts watch --config config/funds.example.json",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "nodemailer": "^7.0.13",
     "pdfjs-dist": "4.8.69"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.1",
+    "@types/nodemailer": "^8.0.2",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
   }
 }

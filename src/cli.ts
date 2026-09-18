@@ -5,8 +5,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { run } = require("./collector");
 
-function argumentsOf(argv) {
-  const args = { command: argv[0] || "run", config: "config/funds.example.json" };
+function argumentsOf(argv): any {
+  const args: any = { command: argv[0] || "run", config: "config/funds.example.json" };
   for (let i = 1; i < argv.length; i += 1) {
     if (argv[i] === "--config") args.config = argv[++i];
     else if (argv[i] === "--no-save") args.save = false;
@@ -15,7 +15,7 @@ function argumentsOf(argv) {
   return args;
 }
 
-async function once(args) {
+async function once(args: any) {
   const configPath = path.resolve(args.config);
   const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
   const result = await run(config, { baseDir: path.dirname(configPath), save: args.save });

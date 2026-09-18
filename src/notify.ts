@@ -12,7 +12,7 @@ function notificationText(payload) {
   return ["QDII 申购额度变化", `时间：${payload.observedAt}`, ...payload.changes.slice(0, 30).map(formatChange)].join("\n");
 }
 
-async function notify(payload, config = {}) {
+async function notify(payload, config: any = {}) {
   if (!payload.changes.length && config.mode !== "always") return { sent: false, reason: "no-changes" };
   if (config.type === "email") return sendEmail(payload, config);
   const url = config.url || (config.urlEnv ? process.env[config.urlEnv] : "");
@@ -31,7 +31,7 @@ async function notify(payload, config = {}) {
   return { sent: true, status: response.status };
 }
 
-async function sendEmail(payload, config = {}) {
+async function sendEmail(payload, config: any = {}) {
   const host = config.host || process.env[config.hostEnv || "QDII_SMTP_HOST"];
   const port = Number(config.port || process.env[config.portEnv || "QDII_SMTP_PORT"] || 587);
   const user = config.user || process.env[config.userEnv || "QDII_SMTP_USER"];

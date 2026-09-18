@@ -234,7 +234,7 @@ function renderHtml(payload) {
     if (!grouped.has(row.fundCode)) grouped.set(row.fundCode, []);
     grouped.get(row.fundCode).push(row);
   }
-  const feeByFund = new Map((payload.fees || []).map((fee) => [fee.fundCode, fee]));
+  const feeByFund = new Map<string, any>((payload.fees || []).map((fee) => [fee.fundCode, fee]));
   const funds = [...grouped.entries()];
   const shareClasses = [...new Set(funds.map(([, rows]) => rows[0].shareClass || "其他"))].sort();
   const strategies = [...new Set(funds.map(([, rows]) => rows[0].strategy || "unknown"))].sort();

@@ -35,7 +35,7 @@ async function resourceToText(resource) {
   const pages = [];
   for (let i = 1; i <= Math.min(doc.numPages, 12); i += 1) {
     const content = await (await doc.getPage(i)).getTextContent();
-    pages.push(content.items.map((item) => item.str).join(" "));
+    pages.push(content.items.map((item: any) => item.str).join(" "));
   }
   return clean(pages.join(" "));
 }
@@ -74,8 +74,8 @@ function parseShareAmount(text, fund) {
   const value = normalizeExtractedText(text);
   const codeRows = [...value.matchAll(/下属(?:基金份额|分级基金)的(?:交易)?代码\s+((?:\d{6}\s+){1,7}\d{6})/g)];
   for (const match of codeRows) {
-    const codes = match[1].match(/\d{6}/g) || [];
-    const fundIndex = codes.indexOf(fund.code);
+    const codes: string[] = match[1].match(/\d{6}/g) || [];
+    const fundIndex = codes.indexOf(String(fund.code));
     if (fundIndex < 0) continue;
     const tail = value.slice(match.index + match[0].length);
     const label = tail.match(/(?:下属(?:基金份额|分级基金)的限制申购(?:（含[^）]{0,30}）)?金额|该基金份额的限制金额)（?[^\d]{0,30}(人民币元|元|美元)?）?\s*/);
@@ -108,7 +108,7 @@ function focusText(text, fund, radius = 900) {
 }
 
 function inferChannels(text) {
-  const result = [];
+  const result: any[] = [];
   if (/(线上直销|网上直销)/.test(text)) result.push({ kind: "direct", access: "web" });
   if (/(直销柜台|直销中心)/.test(text)) result.push({ kind: "direct", access: "counter" });
   if (/(基金公司APP|本公司APP|APP直销)/i.test(text)) result.push({ kind: "direct", access: "app" });
@@ -132,7 +132,7 @@ function extractRelevantLinks(html, baseUrl, fund) {
 }
 
 function extractPdfLinks(html, baseUrl) {
-  const links = [];
+  const links: string[] = [];
   const re = /<a\b[^>]*href=["']([^"']+\.pdf(?:\?[^"']*)?)["'][^>]*>/gi;
   let match;
   while ((match = re.exec(String(html || "")))) {
