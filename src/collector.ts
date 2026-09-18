@@ -1,23 +1,26 @@
 "use strict";
 
+import type { CollectorContext, FeeObservation, Fund, HoldingObservation, MonitorConfig, Observation, ObservationInput, PortfolioPlan, Snapshot } from "./types";
+
 const path = require("node:path");
-const { adapters } = require("./adapters");
+const { adapters: untypedAdapters } = require("./adapters");
 const { collectEastmoney, collectManual } = require("./agency");
 const { collectOperatingFees } = require("./fees");
 const { collectHoldings } = require("./holdings");
 const { fetchResource } = require("./http");
-const { buildSnapshot, compareSnapshots, normalizeObservation } = require("./model");
+const { buildSnapshot, compareSnapshots, normalizeObservation } = require("./model") as typeof import("./model");
 const { notify } = require("./notify");
 const { readJson, saveRun } = require("./store");
 
 const GRADE = { A: 4, B: 3, C: 2, D: 1 };
+const adapters = untypedAdapters as Record<string, { collect: (fund: Fund, context: CollectorContext) => Promise<ObservationInput[]> }>;
 
 function effectiveTime(value) {
   const parsed = Date.parse(value || "");
   return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
 }
 
-function prefersEvidence(row, prior) {
+function prefersEvidence(row: Observation, prior: Observation): boolean {
   const gradeDifference = GRADE[row.reliability.grade] - GRADE[prior.reliability.grade];
   const rowTime = effectiveTime(row.effectiveDate);
   const priorTime = effectiveTime(prior.effectiveDate);
@@ -27,8 +30,8 @@ function prefersEvidence(row, prior) {
   return gradeDifference > 0 || (gradeDifference === 0 && rowTime > priorTime);
 }
 
-function preferEvidence(rows) {
-  const selected = new Map();
+function preferEvidence(rows: unknown[]): Observation[] {
+  const selected = new Map<string, Observation>();
   for (const raw of rows) {
     const row = normalizeObservation(raw);
     const prior = selected.get(row.key);
@@ -37,7 +40,7 @@ function preferEvidence(rows) {
   return [...selected.values()].sort((a, b) => a.key.localeCompare(b.key));
 }
 
-function stableSnapshot(observedAt, rows, before, fees = [], holdings = []) {
+function stableSnapshot(observedAt: string, rows: Observation[], before: Snapshot | null, fees: FeeObservation[] = [], holdings: HoldingObservation[] = []): Snapshot {
   const fresh = buildSnapshot(observedAt, rows, fees, holdings);
   if (!before?.byKey) return fresh;
   const stableRows = fresh.rows.map((row) => {
@@ -55,18 +58,18 @@ function stableSnapshot(observedAt, rows, before, fees = [], holdings = []) {
   return buildSnapshot(observedAt, stableRows, stableFees, stableHoldings);
 }
 
-async function mapLimit(items, concurrency, iterator) {
-  const result = new Array(items.length); let next = 0;
+async function mapLimit<T, R>(items: T[], concurrency: number, iterator: (item: T, index: number) => Promise<R> | R): Promise<R[]> {
+  const result = new Array<R>(items.length); let next = 0;
   const workers = Array.from({ length: Math.min(Math.max(1, concurrency), items.length) }, async () => {
     while (next < items.length) { const index = next++; result[index] = await iterator(items[index], index); }
   });
   await Promise.all(workers); return result;
 }
 
-async function run(config: any, options: any = {}) {
+async function run(config: MonitorConfig, options: { observedAt?: string; fetchResource?: CollectorContext["fetchResource"]; baseDir?: string; save?: boolean } = {}) {
   const observedAt = options.observedAt || new Date().toISOString();
-  const warnings = [];
-  const context = { observedAt, warnings, timeoutMs: config.fetch?.timeoutMs || 20000, fetchResource: options.fetchResource || fetchResource };
+  const warnings: string[] = [];
+  const context: CollectorContext = { observedAt, warnings, timeoutMs: config.fetch?.timeoutMs || 20000, fetchResource: options.fetchResource || fetchResource };
   const enabledFunds = config.funds.filter((f) => f.enabled !== false);
   const batches = await mapLimit(enabledFunds, config.fetch?.concurrency || 3, async (fund) => {
     const adapter = adapters[fund.adapter];
@@ -78,17 +81,17 @@ async function run(config: any, options: any = {}) {
     return [...direct, ...agency, ...collectManual(fund, observedAt, warnings)];
   });
   const rows = preferEvidence(batches.flat());
-  const fetchedFees = (await mapLimit(enabledFunds, config.fetch?.feeConcurrency || 1, (fund) => collectOperatingFees(fund, context)))
+  const fetchedFees = ((await mapLimit(enabledFunds, config.fetch?.feeConcurrency || 1, (fund) => collectOperatingFees(fund, context))) as FeeObservation[])
     .sort((a, b) => a.fundCode.localeCompare(b.fundCode));
   const mappings = config.portfolioMappings || {};
-  const plans = [...new Map(enabledFunds.map((fund) => {
+  const plans = [...new Map<string, PortfolioPlan | null>(enabledFunds.map((fund) => {
     const mapping = mappings[fund.code];
     const plan = mapping ? { portfolioCode: mapping.portfolioCode, sourceCode: mapping.sourceCode, exposure: mapping.exposure } : null;
     return [plan ? `${plan.portfolioCode}|${plan.sourceCode}|${plan.exposure}` : `missing|${fund.code}`, plan];
-  })).values()].filter(Boolean);
+  })).values()].filter((plan): plan is PortfolioPlan => plan !== null);
   const portfolioResults = await mapLimit(plans, config.fetch?.holdingsConcurrency || 3, (plan) => collectHoldings(plan, context));
   const portfolioByCode = new Map(portfolioResults.map((item) => [item.portfolioCode, item]));
-  const fetchedHoldings = enabledFunds.map((fund) => {
+  const fetchedHoldings: HoldingObservation[] = enabledFunds.map((fund) => {
     const mapping = mappings[fund.code];
     const item = mapping && portfolioByCode.get(mapping.portfolioCode);
     if (item) return { ...item, fundCode: fund.code };
@@ -97,7 +100,7 @@ async function run(config: any, options: any = {}) {
       source: null, reliability: { grade: "D", reason: "holdings source is not configured" } };
   }).sort((a, b) => a.fundCode.localeCompare(b.fundCode));
   const outputDir = path.resolve(options.baseDir || process.cwd(), config.outputDir || "data");
-  const before = readJson(path.join(outputDir, "state.json"), null);
+  const before = readJson(path.join(outputDir, "state.json"), null) as Snapshot | null;
   const snapshot = stableSnapshot(observedAt, rows, before, fetchedFees, fetchedHoldings);
   const fees = snapshot.fees || fetchedFees;
   const holdings = snapshot.holdings || fetchedHoldings;
@@ -118,4 +121,4 @@ async function run(config: any, options: any = {}) {
   return payload;
 }
 
-module.exports = { mapLimit, preferEvidence, run, stableSnapshot };
+export { mapLimit, preferEvidence, run, stableSnapshot };

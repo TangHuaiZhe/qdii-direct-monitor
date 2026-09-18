@@ -1,33 +1,43 @@
 "use strict";
 
+import type { CollectorContext, DirectChannel, Fund, FundStatus, ObservationInput, OfficialSource, Resource } from "../types";
+
 const { fetchResource } = require("../http");
 const { extractPdfLinks, extractRelevantLinks, focusText, inferChannels, parseAmount, parseEffectiveDate, parseShareAmount, parseStatus, resourceToHtml, resourceToText } = require("../parser");
 
 class OfficialDirectAdapter {
-  [key: string]: any;
-  constructor(spec) { Object.assign(this, spec); }
+  id: string;
+  manager: string;
+  allowedHosts: string[];
+  defaultSource: (fund: Fund) => string;
+  detailSource?: (fund: Fund) => string;
+  focus?: (text: string, fund: Fund) => string;
+  parseAmount?: (text: string, fund: Fund) => { amount: number; currency: string } | null;
+  parseStatus?: (text: string, fund: Fund) => FundStatus;
 
-  salesUrl(fund) {
+  constructor(spec: { id: string; manager: string; allowedHosts: string[]; defaultSource: (fund: Fund) => string; detailSource?: (fund: Fund) => string; focus?: (text: string, fund: Fund) => string; parseAmount?: (text: string, fund: Fund) => { amount: number; currency: string } | null; parseStatus?: (text: string, fund: Fund) => FundStatus }) { Object.assign(this, spec); }
+
+  salesUrl(fund: Fund): string | null {
     const resolve = this.detailSource || this.defaultSource;
     return resolve ? resolve(fund) : null;
   }
 
-  async parseResource(resource, fund, source, observedAt) {
+  async parseResource(resource: Resource, fund: Fund, source: OfficialSource, observedAt: string): Promise<ObservationInput[]> {
     const fullText = await resourceToText(resource);
     const text = this.focus ? this.focus(fullText, fund) : focusText(fullText, fund);
     const amount = this.parseAmount ? this.parseAmount(text, fund) : (parseShareAmount(text, fund) || parseAmount(text));
     const inferredChannels = inferChannels(text);
-    let channels = source.channels || (source.channel ? [source.channel] : inferredChannels.filter((channel) => channel.kind === "direct"));
+    let channels = (source.channels || (source.channel ? [source.channel] : inferredChannels.filter((channel) => channel.kind === "direct"))) as DirectChannel[];
     if (!channels.length) channels = [{ kind: "direct", access: "all" }];
-    let status = this.parseStatus ? this.parseStatus(text, fund) : parseStatus(text);
+    let status: FundStatus = this.parseStatus ? this.parseStatus(text, fund) : parseStatus(text);
     if (status === "unknown" && amount) status = "limited";
     if (status === "limited" && !amount) status = "unknown";
     const explicitChannel = Boolean(source.channels || source.channel || inferredChannels.some((channel) => channel.kind === "direct"));
     const grade = ["product", "current-status"].includes(source.kind) && explicitChannel ? "A" : (explicitChannel ? "B" : "C");
-    return channels.filter((channel) => channel.kind === "direct").map((channel) => ({
+    return channels.map((channel): ObservationInput => ({
       fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", strategy: fund.strategy || "unknown", currency: amount?.currency || fund.currency || "CNY",
       shareClass: fund.shareClass || "", channel, status, limitAmount: amount?.amount || null,
-      observedAt, effectiveDate: source.effectiveDate || parseEffectiveDate(fullText),
+      accountBasis: "single-fund-account-daily-cumulative", observedAt, effectiveDate: source.effectiveDate || parseEffectiveDate(fullText),
       salesUrl: this.salesUrl(fund),
       source: { url: resource.finalUrl, kind: source.kind || "notice", adapter: this.id },
       reliability: { grade: status === "unknown" ? "D" : grade, reason: status === "unknown" ? "page fetched but current channel limit was not safely parsed" : this.reliabilityReason(source, explicitChannel) },
@@ -35,15 +45,15 @@ class OfficialDirectAdapter {
     }));
   }
 
-  reliabilityReason(source, explicitChannel) {
+  reliabilityReason(source: OfficialSource, explicitChannel: boolean): string {
     if (source.kind === "product" && explicitChannel) return "current official product page explicitly identifies the channel";
     if (explicitChannel) return "official notice/page explicitly identifies the channel; actual logged-in transaction was not tested";
     return "official text implies a limit but channel scope is not explicit";
   }
 
-  async collect(fund, context) {
+  async collect(fund: Fund, context: CollectorContext): Promise<ObservationInput[]> {
     const sources = fund.officialSources?.length ? fund.officialSources : [{ url: this.defaultSource(fund), kind: "product", followLinks: true }];
-    const rows = [];
+    const rows: ObservationInput[] = [];
     for (const source of sources.filter((s) => s.url)) {
       try {
         const resource = await context.fetchResource(source.url, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
@@ -73,14 +83,15 @@ class OfficialDirectAdapter {
     return [this.unknownRow(fund, context.observedAt, sources[0]?.url || null)];
   }
 
-  unknownRow(fund, observedAt, url) {
+  unknownRow(fund: Fund, observedAt: string, url: string | null): ObservationInput {
     return { fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", strategy: fund.strategy || "unknown", currency: fund.currency || "CNY", shareClass: fund.shareClass || "",
       channel: { kind: "direct", access: "all" }, status: "unknown", limitAmount: null, observedAt,
+      accountBasis: "single-fund-account-daily-cumulative", effectiveDate: null,
       salesUrl: this.salesUrl(fund),
       source: url ? { url, kind: "fallback", adapter: this.id } : null,
       reliability: { grade: "D", reason: "official source unavailable or not parseable" }, notes: ["Manual confirmation in the manager app/site may be required."] };
   }
 }
 
-function createAdapter(spec) { return new OfficialDirectAdapter(spec); }
-module.exports = { OfficialDirectAdapter, createAdapter, fetchResource };
+function createAdapter(spec: ConstructorParameters<typeof OfficialDirectAdapter>[0]) { return new OfficialDirectAdapter(spec); }
+export { OfficialDirectAdapter, createAdapter, fetchResource };
