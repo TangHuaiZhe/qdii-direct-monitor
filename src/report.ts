@@ -88,11 +88,16 @@ function purchaseSummaryHtml(rows, fees = []) {
   return `<section class="buy-summary"><div><strong>当前更方便购买</strong><small>先按最高可信额度排序，同额度再比较年综合费率</small></div><div class="summary-list">${text}</div></section>`;
 }
 
+function officialSiteLinkAllowed(url) {
+  if (url.protocol === "https:") return true;
+  return url.protocol === "http:" && (url.hostname === "www.byfunds.com" || url.hostname.endsWith(".byfunds.com"));
+}
+
 function safeSourceLink(source, label = "证据") {
   if (!source?.url) return "";
   try {
     const url = new URL(source.url);
-    if (url.protocol !== "https:") return "";
+    if (!officialSiteLinkAllowed(url)) return "";
     return `<a class="source-link" href="${escapeHtml(url.toString())}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
   } catch { return ""; }
 }
@@ -113,7 +118,7 @@ function salesDetailLink(row, className = "sales-link") {
   const label = direct ? "前往直销官网" : "查看代销详情";
   try {
     const url = new URL(href);
-    if (url.protocol !== "https:") return "";
+    if (!officialSiteLinkAllowed(url)) return "";
     return `<a class="${escapeHtml(className)}" href="${escapeHtml(url.toString())}" target="_blank" rel="noopener noreferrer" aria-label="在新窗口打开${relation}网站">${label} <span aria-hidden="true">↗</span></a>`;
   } catch { return ""; }
 }

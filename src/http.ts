@@ -18,7 +18,7 @@ function hostAllowed(hostname, allowedHosts) {
 function isTransientFetchError(error) {
   if (!error || error.name === "AbortError") return false;
   const message = String(error.message || "");
-  if (/^(HTTP \d+|source URL must be credential-free HTTPS|source host is not allowed:|redirected source host is not allowed:|response exceeds size limit)/.test(message)) return false;
+  if (/^(HTTP \d+|source URL must be credential-free HTTP or HTTPS|source host is not allowed:|redirected source host is not allowed:|response exceeds size limit)/.test(message)) return false;
   const code = error.cause?.code || error.code;
   if (code && NO_RETRY_CODES.has(code)) return false;
   if (error.name === "TypeError" && /fetch failed/i.test(message)) return true;
@@ -45,7 +45,8 @@ async function fetchOnce(target, options) {
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const finalTarget = new URL(response.url);
-    if (finalTarget.protocol !== "https:" || !hostAllowed(finalTarget.hostname, options.allowedHosts || [])) {
+    const finalProtocols = target.protocol === "http:" ? ["http:", "https:"] : ["https:"];
+    if (!finalProtocols.includes(finalTarget.protocol) || !hostAllowed(finalTarget.hostname, options.allowedHosts || [])) {
       throw new Error(`redirected source host is not allowed: ${finalTarget.hostname}`);
     }
     const declared = Number(response.headers.get("content-length") || 0);
@@ -60,7 +61,9 @@ async function fetchOnce(target, options) {
 
 async function fetchResource(url, options: any = {}) {
   const target = new URL(url);
-  if (target.protocol !== "https:" || target.username || target.password) throw new Error("source URL must be credential-free HTTPS");
+  if (!["http:", "https:"].includes(target.protocol) || target.username || target.password) {
+    throw new Error("source URL must be credential-free HTTP or HTTPS");
+  }
   if (!hostAllowed(target.hostname, options.allowedHosts || [])) throw new Error(`source host is not allowed: ${target.hostname}`);
   const retries = Number.isInteger(options.retries) ? options.retries : 1;
   const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS;

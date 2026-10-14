@@ -3,12 +3,12 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { fetchResource } = require("../src/http");
 
-function response(body, status = 200) {
+function response(body, status = 200, finalUrl = "https://www.example.com/a") {
   const bytes = Buffer.from(body);
   return {
     ok: status >= 200 && status < 300,
     status,
-    url: "https://www.example.com/a",
+    url: finalUrl,
     headers: { get: (name) => (name === "content-type" ? "text/html" : String(bytes.length)) },
     arrayBuffer: async () => bytes
   };
@@ -67,6 +67,13 @@ test("an HTTP error is not retried", async () => {
     );
   });
   assert.equal(calls, 1);
+});
+
+test("official HTTP sources on allowed hosts can be fetched", async () => {
+  const resource = await withFetch(async () => response("baoying page", 200, "http://www.byfunds.com/fundDetail/019736/index.html"), () =>
+    fetchResource("http://www.byfunds.com/fundDetail/019736/index.html", { allowedHosts: ["byfunds.com"], timeoutMs: 1000, retries: 0 }));
+  assert.equal(resource.bytes.toString(), "baoying page");
+  assert.equal(resource.finalUrl, "http://www.byfunds.com/fundDetail/019736/index.html");
 });
 
 test("an aborted request reports the timeout", async () => {

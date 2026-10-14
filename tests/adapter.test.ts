@@ -151,7 +151,7 @@ test("every configured fund has a secure official direct website entry", () => {
     const adapter = adapters[fund.adapter];
     const salesUrl = adapter.salesUrl(fund);
     const parsed = new URL(salesUrl);
-    assert.equal(parsed.protocol, "https:", fund.code);
+    assert.equal(parsed.protocol, fund.adapter === "baoying" ? "http:" : "https:", fund.code);
     assert.ok(adapter.allowedHosts.some((host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`)), `${fund.code} ${parsed.hostname}`);
     assert.doesNotMatch(parsed.pathname, /\.pdf$/i, fund.code);
   }
