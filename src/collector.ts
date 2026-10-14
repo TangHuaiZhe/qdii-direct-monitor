@@ -7,7 +7,7 @@ const { adapters: untypedAdapters } = require("./adapters");
 const { collectEastmoney, collectManual } = require("./agency");
 const { collectOperatingFees } = require("./fees");
 const { collectHoldings } = require("./holdings");
-const { fetchResource } = require("./http");
+const { DEFAULT_TIMEOUT_MS, fetchResource } = require("./http");
 const { buildSnapshot, compareSnapshots, normalizeObservation } = require("./model") as typeof import("./model");
 const { notify } = require("./notify");
 const { readJson, saveRun } = require("./store");
@@ -66,10 +66,33 @@ async function mapLimit<T, R>(items: T[], concurrency: number, iterator: (item: 
   await Promise.all(workers); return result;
 }
 
+function shareFetches(fetchResource: CollectorContext["fetchResource"]): CollectorContext["fetchResource"] {
+  const succeeded = new Map<string, Awaited<ReturnType<CollectorContext["fetchResource"]>>>();
+  const inflight = new Map<string, ReturnType<CollectorContext["fetchResource"]>>();
+  return (url, options) => {
+    const key = `${url}\n${[...(options?.allowedHosts || [])].sort().join(",")}`;
+    const cached = succeeded.get(key);
+    if (cached) return Promise.resolve(cached);
+    const pending = inflight.get(key);
+    if (pending) return pending;
+    const task = Promise.resolve()
+      .then(() => fetchResource(url, options))
+      .then((resource) => {
+        succeeded.set(key, resource);
+        return resource;
+      })
+      .finally(() => {
+        if (inflight.get(key) === task) inflight.delete(key);
+      });
+    inflight.set(key, task);
+    return task;
+  };
+}
+
 async function run(config: MonitorConfig, options: { observedAt?: string; fetchResource?: CollectorContext["fetchResource"]; baseDir?: string; save?: boolean } = {}) {
   const observedAt = options.observedAt || new Date().toISOString();
   const warnings: string[] = [];
-  const context: CollectorContext = { observedAt, warnings, timeoutMs: config.fetch?.timeoutMs || 20000, fetchResource: options.fetchResource || fetchResource };
+  const context: CollectorContext = { observedAt, warnings, timeoutMs: config.fetch?.timeoutMs || DEFAULT_TIMEOUT_MS, fetchResource: shareFetches(options.fetchResource || fetchResource) };
   const enabledFunds = config.funds.filter((f) => f.enabled !== false);
   const batches = await mapLimit(enabledFunds, config.fetch?.concurrency || 3, async (fund) => {
     const adapter = adapters[fund.adapter];
@@ -121,4 +144,4 @@ async function run(config: MonitorConfig, options: { observedAt?: string; fetchR
   return payload;
 }
 
-export { mapLimit, preferEvidence, run, stableSnapshot };
+export { mapLimit, preferEvidence, run, shareFetches, stableSnapshot };
