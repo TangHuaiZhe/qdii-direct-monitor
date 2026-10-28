@@ -102,3 +102,32 @@ test("collector runs with injected sources and no persistence", async () => {
   assert.equal(result.holdings[0].items[0].code, "NVDA");
   assert.equal(result.notification.reason, "no-changes");
 });
+
+test("one run fetches a shared official URL once", async () => {
+  let hits = 0;
+  const config = {
+    notifications: {},
+    portfolioMappings: {},
+    fetch: { concurrency: 2 },
+    funds: ["019524", "019525"].map((code) => ({
+      code,
+      name: "华泰柏瑞纳指",
+      manager: "华泰柏瑞基金",
+      adapter: "huataipb",
+      currency: "CNY",
+      officialSources: [{ url: "https://www.huatai-pb.com/same", kind: "notice", channel: { kind: "direct", access: "all" } }],
+      agency: { eastmoney: false }
+    }))
+  };
+  const fetchResource = async (url) => {
+    if (String(url).includes("/same")) {
+      hits += 1;
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    }
+    return { bytes: Buffer.from("019524 暂停大额申购 限额 10 元"), contentType: "text/html", finalUrl: url };
+  };
+  const result = await run(config, { observedAt: "2026-08-29T00:00:00Z", fetchResource, save: false, baseDir: path.join(os.tmpdir(), `qdii-share-${process.pid}`) });
+  assert.equal(hits, 1);
+  assert.equal(result.rows.length, 2);
+  assert.equal(result.warnings.some((warning) => warning.includes("huataipb")), false);
+});

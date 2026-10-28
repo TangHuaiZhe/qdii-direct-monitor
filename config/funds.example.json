@@ -1,7 +1,7 @@
 {
   "outputDir": "../data",
   "historyLimit": 180,
-  "fetch": { "concurrency": 3, "feeConcurrency": 1, "holdingsConcurrency": 3, "timeoutMs": 20000 },
+  "fetch": { "concurrency": 3, "feeConcurrency": 1, "holdingsConcurrency": 3, "timeoutMs": 35000 },
   "schedule": { "intervalMinutes": 30 },
   "notifications": { "type": "email", "mode": "changes", "hostEnv": "QDII_SMTP_HOST", "portEnv": "QDII_SMTP_PORT", "userEnv": "QDII_SMTP_USER", "passwordEnv": "QDII_SMTP_PASSWORD", "fromEnv": "QDII_EMAIL_FROM", "to": "tanghuaizhe@me.com" },
   "portfolioMappings": {
@@ -195,12 +195,12 @@
     },
     {
       "code": "019736", "name": "宝盈纳斯达克100指数发起（QDII）A人民币", "manager": "宝盈基金", "adapter": "baoying", "strategy": "passive", "currency": "CNY", "shareClass": "A",
-      "officialSources": [{ "url": "https://www.byfunds.com/fundDetail/019736/index.html", "kind": "product", "channel": { "kind": "direct", "access": "web" }, "followLinks": true }],
+      "officialSources": [{ "url": "http://www.byfunds.com/fundDetail/019736/index.html", "kind": "product", "channel": { "kind": "direct", "access": "web" }, "followLinks": true }],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {
       "code": "019737", "name": "宝盈纳斯达克100指数发起（QDII）C人民币", "manager": "宝盈基金", "adapter": "baoying", "strategy": "passive", "currency": "CNY", "shareClass": "C",
-      "officialSources": [{ "url": "https://www.byfunds.com/fundDetail/019737/index.html", "kind": "product", "channel": { "kind": "direct", "access": "web" }, "followLinks": true }],
+      "officialSources": [{ "url": "http://www.byfunds.com/fundDetail/019737/index.html", "kind": "product", "channel": { "kind": "direct", "access": "web" }, "followLinks": true }],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {
