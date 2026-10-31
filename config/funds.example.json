@@ -199,12 +199,12 @@
     },
     {
       "code": "019524", "name": "华泰柏瑞纳斯达克100ETF发起式联接（QDII）A", "manager": "华泰柏瑞基金", "adapter": "huataipb", "strategy": "passive", "currency": "CNY", "shareClass": "A",
-      "officialSources": [{ "url": "https://www.huatai-pb.com/upload/pdf/1776840600073-156-1kmddiq2mjc1p.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-04-23" }],
+      "officialSources": [{ "url": "https://www.huatai-pb.com/common/index.html.js", "kind": "current-status", "channel": { "kind": "direct", "access": "web" } }],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {
       "code": "019525", "name": "华泰柏瑞纳斯达克100ETF发起式联接（QDII）C", "manager": "华泰柏瑞基金", "adapter": "huataipb", "strategy": "passive", "currency": "CNY", "shareClass": "C",
-      "officialSources": [{ "url": "https://www.huatai-pb.com/upload/pdf/1776840600073-156-1kmddiq2mjc1p.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-04-23" }],
+      "officialSources": [{ "url": "https://www.huatai-pb.com/common/index.html.js", "kind": "current-status", "channel": { "kind": "direct", "access": "web" } }],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {
