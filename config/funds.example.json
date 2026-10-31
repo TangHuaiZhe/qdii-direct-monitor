@@ -66,7 +66,7 @@
     },
     {
       "code": "005698", "name": "华夏全球科技先锋混合（QDII）A人民币", "manager": "华夏基金", "adapter": "chinaamc", "index": "globalTechnology", "strategy": "active", "currency": "CNY", "shareClass": "A",
-      "officialSources": [{ "url": "https://fund.chinaamc.com/fund/005698/index.shtml", "kind": "product", "channel": { "kind": "direct", "access": "web" } }],
+      "officialSources": [{ "url": "https://fund.chinaamc.com/product/publishGgList.do?fundcode=005698", "kind": "notice-index", "followLinks": true }],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {

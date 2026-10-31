@@ -74,7 +74,7 @@ test("funds with official notice indexes do not also pin stale notice PDFs", () 
 
 test("adapters with stable notice indexes never pin historical notice attachments", () => {
   const config = require("../config/funds.example.json");
-  for (const fund of config.funds.filter((item) => ["ccb", "huitianfu", "wanjia"].includes(item.adapter))) {
+  for (const fund of config.funds.filter((item) => ["ccb", "chinaamc", "huitianfu", "wanjia"].includes(item.adapter))) {
     assert.ok(fund.officialSources.some((source) => source.kind === "notice-index"), fund.code);
     assert.equal(fund.officialSources.some((source) => source.kind === "notice" || /\.(?:pdf|docx?)(?:$|\?)/i.test(source.url)), false, fund.code);
   }
@@ -192,14 +192,42 @@ test("every configured fund has an explicit active/passive strategy", () => {
   assert.deepEqual(config.funds.filter((fund) => fund.strategy === "active").map((fund) => fund.code), ["001668", "005698"]);
 });
 
-test("华夏 adapter parses an open official subscription status", async () => {
-  const context = { observedAt: "2026-09-06T00:00:00Z", warnings: [], timeoutMs: 10,
-    fetchResource: async (url) => ({ bytes: Buffer.from("005698 华夏全球科技先锋混合(QDII)A(人民币) 交易状态 开放申购"), contentType: "text/html", finalUrl: url }) };
+test("ChinaAMC reads the direct CNY limit from the latest purchase-limit notice", () => {
+  const text = "华夏全球科技先锋混合型证券投资基金（QDII）调整申购及定期定额申购业务上限的公告 即自2026年7月21日起，单个投资者通过本公司直销机构单日累计申购（含定期定额申购）申请华夏全球科技先锋混合（QDII）A（人民币）或华夏全球科技先锋混合（QDII）C的金额各类别均应不超过人民币1万元，单个投资者通过本公司直销机构单日累计申购申请华夏全球科技先锋混合（QDII）A（美元现钞）或A（美元现汇）的金额均应不超过1,600美元；单个投资者通过代销机构单日累计申购（含定期定额申购）申请A（人民币）或C的金额各类别均应不超过人民币5,000元。";
+  assert.deepEqual(chinaamc.parseFundAmount(text, { code: "005698", currency: "CNY" }), { amount: 10000, currency: "CNY" });
+  assert.deepEqual(chinaamc.parseFundAmount(text, { code: "005698", currency: "USD" }), { amount: 1600, currency: "USD" });
+});
+
+test("ChinaAMC discovers purchase-limit notices from its official notice list", () => {
+  const html = `
+    <div class="li middle-box"><div class="middle-cont"><div class="div">
+      <div class="item"><a href="../c/2026-07-21/994290.shtml">华夏全球科技先锋混合型证券投资基金（QDII）调整申购及定期定额申购业务上限的公告</a></div>
+      <div class="item">2026-07-21</div>
+    </div></div></div>
+    <div class="li middle-box"><div class="middle-cont"><div class="div">
+      <div class="item"><a href="../c/2026-01-14/921497.shtml">华夏全球科技先锋混合型证券投资基金（QDII）在境外主要投资场所2026年节假日暂停申购、赎回等业务的公告</a></div>
+      <div class="item">2026-01-14</div>
+    </div></div></div>`;
+  const candidates = chinaamc.discoverNoticeCandidates(html, "https://fund.chinaamc.com/product/publishGgList.do?fundcode=005698");
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].url, "https://fund.chinaamc.com/c/2026-07-21/994290.shtml");
+  assert.equal(candidates[0].publishedAt, "2026-07-21");
+});
+
+test("ChinaAMC uses the official limit notice instead of the open product label", async () => {
+  const notice = "华夏全球科技先锋混合型证券投资基金（QDII）调整申购及定期定额申购业务上限的公告 公告日期：2026-07-21 即自2026年7月21日起，单个投资者通过本公司直销机构单日累计申购申请华夏全球科技先锋混合（QDII）A（人民币）的金额应不超过人民币1万元；通过代销机构单日累计申购的金额应不超过人民币5,000元。";
+  const list = `<div class="li middle-box"><div class="middle-cont"><div class="div"><div class="item"><a href="../c/2026-07-21/994290.shtml">华夏全球科技先锋混合型证券投资基金（QDII）调整申购及定期定额申购业务上限的公告</a></div><div class="item">2026-07-21</div></div></div></div>`;
+  const context = { observedAt: "2026-10-31T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => {
+      if (url.includes("publishGgList.do")) return { bytes: Buffer.from(list), contentType: "text/html", finalUrl: url };
+      return { bytes: Buffer.from(notice), contentType: "text/html", finalUrl: url };
+    } };
   const rows = await chinaamc.collect({ code: "005698", name: "华夏全球科技先锋混合（QDII）A人民币", manager: "华夏基金", index: "globalTechnology", currency: "CNY", shareClass: "A",
-    officialSources: [{ url: "https://fund.chinaamc.com/fund/005698/index.shtml", kind: "product", channel: { kind: "direct", access: "web" } }] }, context);
-  assert.equal(rows[0].status, "open");
-  assert.equal(rows[0].index, "globalTechnology");
-  assert.equal(rows[0].reliability.grade, "A");
+    officialSources: [{ url: "https://fund.chinaamc.com/product/publishGgList.do?fundcode=005698", kind: "notice-index", followLinks: true }] }, context);
+  const direct = rows.find((row) => row.channel.kind === "direct" && row.reliability.grade === "B");
+  assert.equal(direct.status, "limited");
+  assert.equal(direct.limitAmount, 10000);
+  assert.match(direct.source.url, /994290\.shtml/);
 });
 
 test("config tracks 广发美元A Nasdaq-100 share 000055", () => {
@@ -312,9 +340,9 @@ test("config tracks 华夏全球科技先锋人民币A share 005698", () => {
     currency: "CNY",
     shareClass: "A",
     source: {
-      url: "https://fund.chinaamc.com/fund/005698/index.shtml",
-      kind: "product",
-      channel: { kind: "direct", access: "web" }
+      url: "https://fund.chinaamc.com/product/publishGgList.do?fundcode=005698",
+      kind: "notice-index",
+      followLinks: true
     }
   });
 });
