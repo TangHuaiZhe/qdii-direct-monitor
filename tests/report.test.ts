@@ -187,6 +187,23 @@ test("keeps notice evidence separate from the official direct sales link", () =>
   assert.match(html, /href="https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml"/);
 });
 
+test("shows direct quota evidence URLs in the page for manual verification", () => {
+  const source = payload({ rows: [
+    { ...payload().rows[0], source: { url: "https://www.huaan.com.cn/notice.pdf", kind: "notice", adapter: "huaan" } },
+    { ...payload().rows[0], channel: { kind: "direct", access: "app" }, source: { url: "https://www.huaan.com.cn/app-notice.pdf", kind: "notice", adapter: "huaan" } }
+  ] });
+  const listHtml = renderHtml(source);
+  assert.match(listHtml, /class="evidence-url">https:\/\/www\.huaan\.com\.cn\/notice\.pdf</);
+  const detailHtml = renderFundHtml(source, "040046");
+  assert.match(detailHtml, /class="evidence-url">https:\/\/www\.huaan\.com\.cn\/notice\.pdf</);
+  assert.match(detailHtml, /class="evidence-url">https:\/\/www\.huaan\.com\.cn\/app-notice\.pdf</);
+});
+
+test("shows the direct source URL even when it matches the sales entry", () => {
+  const html = renderHtml(payload());
+  assert.match(html, /class="evidence-url">https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml</);
+});
+
 test("does not render insecure sales links", () => {
   const source = payload({ rows: [{
     ...payload().rows[0],
