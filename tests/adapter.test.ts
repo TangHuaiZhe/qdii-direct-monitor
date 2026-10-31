@@ -72,6 +72,14 @@ test("funds with official notice indexes do not also pin stale notice PDFs", () 
   }
 });
 
+test("adapters with stable notice indexes never pin historical notice attachments", () => {
+  const config = require("../config/funds.example.json");
+  for (const fund of config.funds.filter((item) => ["ccb", "huitianfu", "wanjia"].includes(item.adapter) && item.code !== "001668")) {
+    assert.ok(fund.officialSources.some((source) => source.kind === "notice-index"), fund.code);
+    assert.equal(fund.officialSources.some((source) => source.kind === "notice" || /\.(?:pdf|docx?)(?:$|\?)/i.test(source.url)), false, fund.code);
+  }
+});
+
 test("Huitianfu parses the current global mobile internet subscription status", async () => {
   const text = "001668 汇添富全球移动互联混合（QDII）人民币A 2026-09-05 5.2195 5.2195 正常 申购 定投";
   const context = { observedAt: "2026-09-06T00:00:00Z", warnings: [], timeoutMs: 10,
@@ -311,13 +319,40 @@ test("Ccb reads the direct-channel limit from the attached Word notice", async (
   assert.match(text, /下属分级基金的交易代码/);
   assert.deepEqual(ccb.parseAmount(text, { code: "539001", currency: "CNY" }), { amount: 10000, currency: "CNY" });
   assert.deepEqual(ccb.parseAmount(text, { code: "012752", currency: "CNY" }), { amount: 10000, currency: "CNY" });
+  const currentText = `${text} 公告送出日期：2026年8月19日 暂停大额申购起始日 2026年8月20日 其他需要提示的事项 （2）针对在建信基金直销渠道投资建信纳斯达克100指数型证券投资基金（QDII）人民币份额（基金代码：539001（A类）、012752（C类））的情况，如投资者单日单个基金账户单笔或多笔累计申购、定投金额高于50元（不同份额分别计算），本基金管理人有权拒绝高于50元的部分金额。`;
+  assert.deepEqual(ccb.parseAmount(currentText, { code: "012752", currency: "CNY" }), { amount: 50, currency: "CNY" });
   const context = { observedAt: "2026-10-31T00:00:00Z", warnings: [], timeoutMs: 10,
-    fetchResource: async (url) => ({ bytes: Buffer.from(text), contentType: "text/html", finalUrl: url }) };
+    fetchResource: async (url) => {
+      if (url.includes("/website/v1/api/fund/notice")) return { bytes: Buffer.from(JSON.stringify({ data: { content: [
+        { date: "2026-08-12", cntId: 303418, title: "建信纳斯达克100指数型证券投资基金（QDII）在直销渠道暂停大额申购、定期定额投资公告" },
+        { date: "2026-08-19", cntId: 303658, title: "建信纳斯达克100指数型证券投资基金（QDII）暂停大额申购、定期定额投资公告" }
+      ] } })), contentType: "application/json", finalUrl: url };
+      if (url.includes("303658.html")) return { bytes: Buffer.from('<a href="/notice/current.doc">附件</a>'), contentType: "text/html", finalUrl: url };
+      return { bytes: Buffer.from(currentText), contentType: "text/html", finalUrl: `${url}.html` };
+    } };
   const rows = await ccb.collect({ code: "012752", name: "建信纳指C", manager: "建信基金", currency: "CNY", shareClass: "C",
-    officialSources: [{ url: "https://www.ccbfund.cn/x", kind: "notice", channel: { kind: "direct", access: "all" }, effectiveDate: "2026-08-13" }] }, context);
+    officialSources: [{ url: "https://www.ccbfund.cn/website/v1/api/fund/notice?fundCode=012752", kind: "notice-index" }] }, context);
   assert.equal(rows[0].status, "limited");
-  assert.equal(rows[0].limitAmount, 10000);
+  assert.equal(rows[0].limitAmount, 50);
+  assert.equal(rows[0].effectiveDate, "2026-08-20");
   assert.equal(rows[0].reliability.grade, "B");
+  const aRows = await ccb.collect({ code: "539001", name: "建信纳指A", manager: "建信基金", currency: "CNY", shareClass: "A",
+    officialSources: [{ url: "https://www.ccbfund.cn/website/v1/api/fund/notice?fundCode=539001", kind: "notice-index" }] }, context);
+  assert.equal(aRows[0].status, "limited");
+  assert.equal(aRows[0].limitAmount, 50);
+  assert.equal(aRows[0].effectiveDate, "2026-08-20");
+});
+
+test("Ccb selects the newest applicable limit notice and ignores later sales notices", () => {
+  const ccb = require("../src/adapters/ccb");
+  const resource = { bytes: Buffer.from(JSON.stringify({ data: { content: [
+    { date: "2026-10-28", cntId: 306846, title: "关于新增证券公司为建信纳斯达克100指数型证券投资基金（QDII）销售机构的公告" },
+    { date: "2026-08-12", cntId: 303418, title: "建信纳斯达克100指数型证券投资基金（QDII）在直销渠道暂停大额申购、定期定额投资公告" },
+    { date: "2026-08-19", cntId: 303658, title: "建信纳斯达克100指数型证券投资基金（QDII）暂停大额申购、定期定额投资公告" }
+  ] } })) };
+  assert.deepEqual(ccb.latestLimitNotice(resource), { date: "2026-08-19", cntId: 303658, title: "建信纳斯达克100指数型证券投资基金（QDII）暂停大额申购、定期定额投资公告" });
+  const candidates = ccb.discoverNoticeCandidates(resource);
+  assert.deepEqual(candidates.map((item) => item.publishedAt), ["2026-08-12", "2026-08-19"]);
 });
 
 

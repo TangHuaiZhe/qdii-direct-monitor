@@ -87,6 +87,17 @@ export interface NoticeHealth {
   rejectedNotices: number;
   conflicts: number;
   cacheFallbacks: number;
+  staleTimelines: number;
+  timelines: NoticeTimelineHealth[];
+}
+
+export interface NoticeTimelineHealth {
+  adapter: string;
+  fundCode: string;
+  latestRelevantNotice: string | null;
+  latestParsedEvent: string | null;
+  checkedAt: string | null;
+  status: "current" | "stale" | "empty" | "unavailable";
 }
 
 export interface ManualChannel {

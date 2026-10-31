@@ -73,7 +73,7 @@ adapter.collect = async function collect(fund, context) {
   } catch (error) {
     context.warnings.push(`${fund.code} huitianfu notices: ${error.message}`);
     if (readEventCache(context.eventCacheDir, this.id, fund.code).length && context.noticeHealth) context.noticeHealth.cacheFallbacks += 1;
-    const timeline = await updateNoticeTimeline({ adapter: this, fund, context, candidates: [] });
+    const timeline = await updateNoticeTimeline({ adapter: this, fund, context, candidates: [], indexChecked: false });
     if (timeline) rows.push(timeline);
   }
   return rows;

@@ -209,12 +209,12 @@
     },
     {
       "code": "539001", "name": "建信纳斯达克100指数（QDII）A人民币", "manager": "建信基金", "adapter": "ccb", "strategy": "passive", "currency": "CNY", "shareClass": "A",
-      "officialSources": [{ "url": "https://www.ccbfund.cn/resource/static/content/303416.html", "kind": "notice", "followLinks": true, "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-08-13" }],
+      "officialSources": [{ "url": "https://www.ccbfund.cn/website/v1/api/fund/notice?fundCode=539001&categoryId=&keyword=&start=&end=&page=1", "kind": "notice-index", "followLinks": true }],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {
       "code": "012752", "name": "建信纳斯达克100指数（QDII）C人民币", "manager": "建信基金", "adapter": "ccb", "strategy": "passive", "currency": "CNY", "shareClass": "C",
-      "officialSources": [{ "url": "https://www.ccbfund.cn/resource/static/content/303416.html", "kind": "notice", "followLinks": true, "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-08-13" }],
+      "officialSources": [{ "url": "https://www.ccbfund.cn/website/v1/api/fund/notice?fundCode=012752&categoryId=&keyword=&start=&end=&page=1", "kind": "notice-index", "followLinks": true }],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {

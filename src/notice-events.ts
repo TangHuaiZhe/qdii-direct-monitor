@@ -6,7 +6,20 @@ const path = require("node:path");
 const { readJson, writeAtomic } = require("./store");
 
 function emptyNoticeHealth(): NoticeHealth {
-  return { candidatesDiscovered: 0, newNotices: 0, parsedNotices: 0, rejectedNotices: 0, conflicts: 0, cacheFallbacks: 0 };
+  return { candidatesDiscovered: 0, newNotices: 0, parsedNotices: 0, rejectedNotices: 0, conflicts: 0, cacheFallbacks: 0, staleTimelines: 0, timelines: [] };
+}
+
+function recordTimelineHealth(context: CollectorContext, adapter: string, fundCode: string, latestRelevantNotice: string | null, latestParsedEvent: string | null, indexChecked = true) {
+  if (!context.noticeHealth) return;
+  context.noticeHealth.timelines ||= [];
+  context.noticeHealth.staleTimelines ||= 0;
+  const status = !indexChecked ? "unavailable" : (!latestParsedEvent ? "empty" : (latestRelevantNotice && latestParsedEvent < latestRelevantNotice ? "stale" : "current"));
+  const item = { adapter, fundCode, latestRelevantNotice, latestParsedEvent, checkedAt: indexChecked ? context.observedAt : null, status } as const;
+  const index = context.noticeHealth.timelines.findIndex((entry) => entry.adapter === adapter && entry.fundCode === fundCode);
+  if (index >= 0) context.noticeHealth.timelines[index] = item;
+  else context.noticeHealth.timelines.push(item);
+  context.noticeHealth.timelines.sort((a, b) => a.fundCode.localeCompare(b.fundCode) || a.adapter.localeCompare(b.adapter));
+  context.noticeHealth.staleTimelines = context.noticeHealth.timelines.filter((entry) => entry.status === "stale").length;
 }
 
 function eventKey(event: LimitEvent): string {
@@ -87,6 +100,7 @@ async function updateNoticeTimeline(options: {
   context: CollectorContext;
   candidates: NoticeCandidate[];
   fetchCandidate?: (candidate: NoticeCandidate) => Promise<Resource>;
+  indexChecked?: boolean;
 }): Promise<ObservationInput | null> {
   const { adapter, fund, context, candidates } = options;
   if (context.noticeHealth) context.noticeHealth.candidatesDiscovered += candidates.length;
@@ -121,13 +135,15 @@ async function updateNoticeTimeline(options: {
   const applies = (event: LimitEvent) => event.currency === (fund.currency || "CNY") && (!event.shareClass || event.shareClass === (fund.shareClass || null));
   const cached = mergeEventCache(context.eventCacheDir, adapter.id, fund.code, freshEvents, context.observedAt, applies, processedSources);
   const { state, conflict } = reduceLimitEvents(cached);
+  const latestCandidateDate = candidates.map((candidate) => candidate.publishedAt).filter((date): date is string => Boolean(date)).sort().at(-1) || null;
+  const latestParsedEvent = state?.event?.publishedAt || null;
+  recordTimelineHealth(context, adapter.id, fund.code, latestCandidateDate, latestParsedEvent, options.indexChecked !== false);
   if (conflict) {
     if (context.noticeHealth) context.noticeHealth.conflicts += 1;
     context.warnings.push(`${fund.code} ${adapter.id} events: ${conflict}`);
     return null;
   }
   if (!state) return null;
-  const latestCandidateDate = candidates.map((candidate) => candidate.publishedAt).filter(Boolean).sort().at(-1);
   if (latestCandidateDate && String(state.event.publishedAt || "") < latestCandidateDate) {
     context.warnings.push(`${fund.code} ${adapter.id} events: latest relevant notice ${latestCandidateDate} was not safely parsed`);
     return null;
@@ -140,4 +156,4 @@ async function updateNoticeTimeline(options: {
     reliability: { grade: "B", reason: "official notice event timeline; actual logged-in transaction was not tested" }, notes: [] };
 }
 
-export { emptyNoticeHealth, eventKey, mergeEventCache, readEventCache, readProcessedSources, reduceLimitEvents, updateNoticeTimeline, validateEvent };
+export { emptyNoticeHealth, eventKey, mergeEventCache, readEventCache, readProcessedSources, recordTimelineHealth, reduceLimitEvents, updateNoticeTimeline, validateEvent };

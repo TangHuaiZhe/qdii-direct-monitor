@@ -77,7 +77,7 @@ test("timeline retries sources after the parser cache version changes", async ()
     mergeEventCache(root, "gf", "270042", [], "2026-09-01T00:00:00Z", () => true, [url]);
     let fetched = 0;
     const context = { observedAt: "2026-10-01T00:00:00Z", warnings: [], timeoutMs: 10, eventCacheDir: root,
-      noticeHealth: { candidatesDiscovered: 0, newNotices: 0, parsedNotices: 0, rejectedNotices: 0, conflicts: 0, cacheFallbacks: 0 },
+      noticeHealth: { candidatesDiscovered: 0, newNotices: 0, parsedNotices: 0, rejectedNotices: 0, conflicts: 0, cacheFallbacks: 0, staleTimelines: 0, timelines: [] },
       fetchResource: async () => { fetched += 1; return { bytes: Buffer.from(""), contentType: "text/html", finalUrl: url }; } };
     const adapter = { id: "gf", allowedHosts: ["gffunds.com.cn"], salesUrl: () => "https://www.gffunds.com.cn/fund",
       parseResource: async () => [{ fundCode: "270042", currency: "CNY", shareClass: "A", channel: { kind: "direct", access: "all" }, status: "suspended", limitAmount: null, effectiveDate: "2026-09-02" }] };
@@ -94,7 +94,7 @@ test("timeline refuses an old event when the newest relevant notice failed", asy
   try {
     mergeEventCache(root, "gf", "270042", [event()], "2026-09-01T00:00:00Z");
     const context = { observedAt: "2026-10-01T00:00:00Z", warnings: [], timeoutMs: 10, eventCacheDir: root,
-      noticeHealth: { candidatesDiscovered: 0, newNotices: 0, parsedNotices: 0, rejectedNotices: 0, conflicts: 0, cacheFallbacks: 0 },
+      noticeHealth: { candidatesDiscovered: 0, newNotices: 0, parsedNotices: 0, rejectedNotices: 0, conflicts: 0, cacheFallbacks: 0, staleTimelines: 0, timelines: [] },
       fetchResource: async () => { throw new Error("unparseable"); } };
     const adapter = { id: "gf", allowedHosts: ["gffunds.com.cn"], salesUrl: () => "https://www.gffunds.com.cn/fund",
       parseResource: async () => [] };
@@ -102,6 +102,33 @@ test("timeline refuses an old event when the newest relevant notice failed", asy
     const result = await updateNoticeTimeline({ adapter, fund, context, candidates: [{ manager: "广发基金", title: "新公告", url: "https://www.gffunds.com.cn/new.pdf", publishedAt: "2026-09-02", fundCodes: [], currencyScope: "CNY", shareClasses: [], eventHint: "unknown" }] });
     assert.equal(result, null);
     assert.ok(context.warnings.some((warning) => warning.includes("latest relevant notice")));
+    assert.equal(context.noticeHealth.staleTimelines, 1);
+    assert.deepEqual(context.noticeHealth.timelines[0], {
+      adapter: "gf",
+      fundCode: "270042",
+      latestRelevantNotice: "2026-09-02",
+      latestParsedEvent: "2026-08-30",
+      checkedAt: "2026-10-01T00:00:00Z",
+      status: "stale"
+    });
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("timeline marks the index unavailable when only cached events were checked", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "qdii-unavailable-"));
+  try {
+    mergeEventCache(root, "gf", "270042", [event()], "2026-09-01T00:00:00Z");
+    const context = { observedAt: "2026-10-01T00:00:00Z", warnings: [], timeoutMs: 10, eventCacheDir: root,
+      noticeHealth: { candidatesDiscovered: 0, newNotices: 0, parsedNotices: 0, rejectedNotices: 0, conflicts: 0, cacheFallbacks: 1, staleTimelines: 0, timelines: [] },
+      fetchResource: async () => { throw new Error("not called"); } };
+    const adapter = { id: "gf", allowedHosts: ["gffunds.com.cn"], salesUrl: () => "https://www.gffunds.com.cn/fund" };
+    const fund = { code: "270042", name: "广发纳指", manager: "广发基金", adapter: "gf", currency: "CNY", shareClass: "A" };
+    const result = await updateNoticeTimeline({ adapter, fund, context, candidates: [], indexChecked: false });
+    assert.equal(result.status, "limited");
+    assert.equal(context.noticeHealth.timelines[0].status, "unavailable");
+    assert.equal(context.noticeHealth.timelines[0].checkedAt, null);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
