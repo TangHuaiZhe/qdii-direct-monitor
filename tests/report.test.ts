@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const { amountLabel, feeBand, feeLabel, rankPurchasableFunds, reliabilityReasonLabel, renderFundHtml, renderHtml } = require("../src/report");
 
 function payload(overrides = {}) {
-  return { observedAt: "2026-08-29T04:47:59.125Z", warnings: [], changes: [], fees: [{
+  return { observedAt: "2026-08-29T04:47:59.125Z", gitCommit: "0123456789abcdef0123456789abcdef01234567", warnings: [], changes: [], fees: [{
     fundCode: "040046", managementRate: 0.6, custodyRate: 0.2, salesServiceRate: 0, annualRate: 0.8,
     reliability: { grade: "B", reason: "current public fee page" }, source: { url: "https://fundf10.eastmoney.com/jjfl_040046.html" }
   }], holdings: [{
@@ -38,6 +38,10 @@ test("renders a self-contained Chinese HTML report", () => {
   assert.match(html, /--primary:#b4232f/);
   assert.match(html, /linear-gradient\(135deg,#7f1420,#b4232f 72%,#cf4450\)/);
   assert.match(html, /id="refresh-page"/);
+  assert.match(html, /commit <code>0123456<\/code>/);
+  assert.match(html, /href="https:\/\/github\.com\/TangHuaiZhe\/qdii-direct-monitor\/commit\/0123456789abcdef0123456789abcdef01234567"/);
+  assert.match(html, /class="github-link" href="https:\/\/github\.com\/TangHuaiZhe\/qdii-direct-monitor"/);
+  assert.match(html, /aria-label="在 GitHub 查看本项目"/);
   assert.match(html, /window\.location\.reload\(\)/);
   assert.match(html, /data-column-sort="agency"/);
   assert.match(html, /data-column-sort="direct"/);
