@@ -203,7 +203,7 @@ test("renders the global technology index label", () => {
   assert.doesNotMatch(html, /QDII Monitor \/ 纳斯达克100 \/ 005698/);
 });
 
-test("lists funds without a trusted direct observation in a separate panel", () => {
+test("lists funds without a trusted direct observation in a collapsible footer section", () => {
   assert.doesNotMatch(renderHtml(payload()), /直销数据未抓取到的基金/);
   const base = payload().rows[0];
   const html = renderHtml(payload({ rows: [
@@ -215,10 +215,13 @@ test("lists funds without a trusted direct observation in a separate panel", () 
       reliability: { grade: "B", reason: "current public agency sales page; logged-in order submission was not tested" },
       source: { url: "https://fund.eastmoney.com/000055.html", kind: "public-sales-page", adapter: "eastmoney" } }
   ] }));
-  assert.match(html, /id="missing-data"/);
+  assert.match(html, /<details class="missing-section" id="missing-data">/);
+  assert.match(html, /<summary>直销数据未抓取到的基金（1 只）<\/summary>/);
   assert.match(html, /1 只/);
   assert.match(html, /000055/);
   assert.match(html, /页面已抓取，但无法安全解析当前渠道额度/);
   assert.match(html, /href="https:\/\/gfwx\.gffunds\.com\.cn\/funds\/\?fundcode=000055"/);
   assert.match(html, /href="https:\/\/www\.gffunds\.com\.cn\/funds\/\?fundcode=000055"[^>]*>证据<\/a>/);
+  assert.ok(html.indexOf('id="missing-data"') > html.indexOf('class="method"'), "missing section follows the main list");
+  assert.ok(html.indexOf('id="missing-data"') < html.indexOf('class="footer"'), "missing section stays before the footer");
 });
