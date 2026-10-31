@@ -68,6 +68,9 @@ test("renders the responsive market-terminal design", () => {
   assert.match(html, /NASDAQ 100 · 场外份额监控/);
   assert.match(html, /class="market-rail"/);
   assert.match(html, /prefers-reduced-motion/);
+  assert.match(html, /\.hero\{grid-template-columns:1fr;min-height:150px/);
+  assert.doesNotMatch(html, /class="hero-code"/);
+  assert.doesNotMatch(html, />NDX</);
 });
 
 test("escapes untrusted source data", () => {
