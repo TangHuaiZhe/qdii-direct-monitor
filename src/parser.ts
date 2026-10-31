@@ -29,6 +29,12 @@ function resourceToHtml(resource) {
 
 async function resourceToText(resource) {
   const isPdf = /pdf/i.test(resource.contentType) || /\.pdf(?:$|\?)/i.test(resource.finalUrl);
+  const isDoc = /msword|wordprocessingml/i.test(resource.contentType) || /\.doc(?:$|\?)/i.test(resource.finalUrl);
+  if (isDoc) {
+    const WordExtractor = require("word-extractor");
+    const document = await new WordExtractor().extract(Buffer.from(resource.bytes));
+    return clean(document.getBody());
+  }
   if (!isPdf) return htmlToText(resourceToHtml(resource));
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const doc = await pdfjs.getDocument({ data: new Uint8Array(resource.bytes), useWorkerFetch: false, isEvalSupported: false }).promise;
@@ -112,7 +118,7 @@ function inferChannels(text) {
   if (/(线上直销|网上直销)/.test(text)) result.push({ kind: "direct", access: "web" });
   if (/(直销柜台|直销中心)/.test(text)) result.push({ kind: "direct", access: "counter" });
   if (/(基金公司APP|本公司APP|APP直销)/i.test(text)) result.push({ kind: "direct", access: "app" });
-  if (/(直销机构|本公司直销|直销\s*[\d,]+(?:\.\d+)?\s*(?:万|元|美元))/.test(text) && !result.some((c) => c.kind === "direct")) result.push({ kind: "direct", access: "all" });
+  if (/(直销机构|本公司直销|直销渠道|直销\s*[\d,]+(?:\.\d+)?\s*(?:万|元|美元))/.test(text) && !result.some((c) => c.kind === "direct")) result.push({ kind: "direct", access: "all" });
   if (/(天天基金|东方财富)/.test(text)) result.push({ kind: "agency", access: "eastmoney", name: "天天基金" });
   if (/(其他销售渠道|非直销销售机构|代销机构|非直销)/.test(text)) result.push({ kind: "agency", access: "all" });
   return result;

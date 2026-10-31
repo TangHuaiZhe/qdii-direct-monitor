@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "nodemailer": "^7.0.13",
-    "pdfjs-dist": "4.8.69"
+    "pdfjs-dist": "4.8.69",
+    "word-extractor": "^1.0.4"
   },
   "devDependencies": {
     "@types/node": "^26.6.1",

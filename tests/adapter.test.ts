@@ -289,3 +289,22 @@ test("config tracks 华夏全球科技先锋人民币A share 005698", () => {
     }
   });
 });
+
+test("Ccb reads the direct-channel limit from the attached Word notice", async () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { resourceToText } = require("../src/parser");
+  const ccb = require("../src/adapters/ccb");
+  const bytes = fs.readFileSync(path.join(__dirname, "fixtures", "ccb-notice.doc"));
+  const text = await resourceToText({ bytes, contentType: "application/msword", finalUrl: "https://www.ccbfund.cn/notice.doc" });
+  assert.match(text, /下属分级基金的交易代码/);
+  assert.deepEqual(ccb.parseAmount(text, { code: "539001", currency: "CNY" }), { amount: 10000, currency: "CNY" });
+  assert.deepEqual(ccb.parseAmount(text, { code: "012752", currency: "CNY" }), { amount: 10000, currency: "CNY" });
+  const context = { observedAt: "2026-10-31T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => ({ bytes: Buffer.from(text), contentType: "text/html", finalUrl: url }) };
+  const rows = await ccb.collect({ code: "012752", name: "建信纳指C", manager: "建信基金", currency: "CNY", shareClass: "C",
+    officialSources: [{ url: "https://www.ccbfund.cn/x", kind: "notice", channel: { kind: "direct", access: "all" }, effectiveDate: "2026-08-13" }] }, context);
+  assert.equal(rows[0].status, "limited");
+  assert.equal(rows[0].limitAmount, 10000);
+  assert.equal(rows[0].reliability.grade, "B");
+});
