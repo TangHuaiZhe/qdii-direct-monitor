@@ -7,6 +7,9 @@ const southern = require("../src/adapters/southern");
 const tianhong = require("../src/adapters/tianhong");
 const igwfmc = require("../src/adapters/igwfmc");
 const chinaamc = require("../src/adapters/chinaamc");
+const gf = require("../src/adapters/gf");
+const baoying = require("../src/adapters/baoying");
+const guotai = require("../src/adapters/guotai");
 const wanjia = require("../src/adapters/wanjia");
 const { adapters } = require("../src/adapters");
 
@@ -307,4 +310,47 @@ test("Ccb reads the direct-channel limit from the attached Word notice", async (
   assert.equal(rows[0].status, "limited");
   assert.equal(rows[0].limitAmount, 10000);
   assert.equal(rows[0].reliability.grade, "B");
+});
+
+
+test("Gf picks the latest applicable official notice for the share class", () => {
+  const notices = `var FundPost4 = {"RECORDS":[
+    {"DOCTITLE":"广发基金管理有限公司关于旗下基金2026年第3季度报告提示性公告","DOCPUBURL":"http://www.gffunds.com.cn/q3.pdf","DOCRELTIME":"2026.10.27 08:45:00"},
+    {"DOCTITLE":"关于广发纳斯达克100交易型开放式指数证券投资基金联接基金（QDII）继续暂停申购（包含转换转入、定期定额及不定额投资）业务的提示性公告","DOCPUBURL":"http://www.gffunds.com.cn/jjgg/zdsj/202610/P020261029315000918826.pdf","DOCRELTIME":"2026.10.29 08:44:00"},
+    {"DOCTITLE":"关于广发纳斯达克100交易型开放式指数证券投资基金联接基金（QDII）人民币份额暂停申购（含转换转入、定期定额和不定额投资）业务的公告","DOCPUBURL":"http://www.gffunds.com.cn/jjgg/zdsj/202610/P020261014313441350967.pdf","DOCRELTIME":"2026.10.14 08:42:00"},
+    {"DOCTITLE":"关于广发纳斯达克100交易型开放式指数证券投资基金联接基金（QDII）人民币份额恢复申购（含转换转入、定期定额和不定额投资）业务的公告","DOCPUBURL":"http://www.gffunds.com.cn/jjgg/zdsj/202610/P020261012571415396720.pdf","DOCRELTIME":"2026.10.12 15:52:00"},
+    {"DOCTITLE":"关于广发纳斯达克100交易型开放式指数证券投资基金联接基金（QDII）美元份额暂停申购（含定期定额和不定额投资）业务的公告","DOCPUBURL":"http://www.gffunds.com.cn/jjgg/zdsj/202609/P020260910307983942745.pdf","DOCRELTIME":"2026.09.10 08:33:00"}
+  ]};`;
+  for (const currency of ["USD", "CNY"]) {
+    const notice = gf.pickLatestNotice(notices, { code: currency === "USD" ? "000055" : "270042", currency });
+    assert.equal(notice.url, "http://www.gffunds.com.cn/jjgg/zdsj/202610/P020261029315000918826.pdf");
+    assert.equal(notice.date, "2026-10-29");
+  }
+  const scoped = `var FundPost4 = {"RECORDS":[
+    {"DOCTITLE":"关于广发纳斯达克100交易型开放式指数证券投资基金联接基金（QDII）人民币份额恢复申购（含转换转入、定期定额和不定额投资）业务的公告","DOCPUBURL":"http://www.gffunds.com.cn/resume-rmb.pdf","DOCRELTIME":"2026.10.12 15:52:00"},
+    {"DOCTITLE":"关于广发纳斯达克100交易型开放式指数证券投资基金联接基金（QDII）美元份额暂停申购（含定期定额和不定额投资）业务的公告","DOCPUBURL":"http://www.gffunds.com.cn/suspend-usd.pdf","DOCRELTIME":"2026.09.10 08:33:00"}
+  ]};`;
+  assert.equal(gf.pickLatestNotice(scoped, { code: "000055", currency: "USD" }).url, "http://www.gffunds.com.cn/suspend-usd.pdf");
+  assert.equal(gf.pickLatestNotice(scoped, { code: "270042", currency: "CNY" }).url, "http://www.gffunds.com.cn/resume-rmb.pdf");
+});
+
+
+test("Baoying picks the latest fund-level limit notice and ignores holiday notices", () => {
+  const payload = { data: { list: [
+    { title: "宝盈纳斯达克100指数型发起式证券投资基金（QDII）2026年第3季度报告", pubDate: "2026-10-27 08:30:01", attachmentUrl: "/q3.pdf" },
+    { title: "宝盈纳斯达克100指数型发起式证券投资基金（QDII）2027年境外主要市场节假日及非交易日暂停申购、赎回等交易类业务的公告", pubDate: "2026-12-01 08:00:00", attachmentUrl: "/holiday.pdf" },
+    { title: "宝盈纳斯达克100指数型发起式证券投资基金（QDII）调整大额申购、定期定额投资业务限制金额的公告", pubDate: "2026-09-24 08:49:58", attachmentUrl: "/limit.pdf" },
+    { title: "宝盈纳斯达克100指数型发起式证券投资基金（QDII）暂停申购、定期定额投资业务的公告", pubDate: "2026-01-12 08:44:14", attachmentUrl: "/suspend.pdf" }
+  ] } };
+  const notice = baoying.pickLatestNotice(payload);
+  assert.equal(notice.attachmentUrl, "/limit.pdf");
+  assert.equal(notice.pubDate, "2026-09-24 08:49:58");
+});
+
+
+test("Guotai reads the official inline daily purchase limit", () => {
+  const html = `<script>var gtOptions = { fundcode: '160213', limits: {"buy":{"high":100,"low":1,"add":null,"ccn":"申购","application":99999,"accumulation":100},"sell":{"mps":0.01}}, flags: {"subscribe_state":false,"closed":false} };</script>`;
+  assert.equal(guotai.parseInlineLimit(html), 100);
+  assert.equal(guotai.parseInlineLimit("<html>layout changed</html>"), null);
+  assert.equal(guotai.parseInlineLimit("limits: {\"buy\":{\"high\":null,\"accumulation\":null}}, flags: {}"), null);
 });
