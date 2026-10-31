@@ -53,6 +53,42 @@ export interface OfficialSource {
   channels?: DirectChannel[];
 }
 
+export type LimitEventAction = "set-limit" | "suspend-all" | "resume" | "confirm-restriction";
+
+export interface NoticeCandidate {
+  manager: string;
+  title: string;
+  url: string;
+  publishedAt: string | null;
+  fundCodes: string[];
+  currencyScope: "CNY" | "USD" | "all" | "unknown";
+  shareClasses: string[];
+  eventHint: LimitEventAction | "unknown";
+  cacheKey?: string;
+}
+
+export interface LimitEvent {
+  fundCode: string;
+  shareClass: string | null;
+  currency: string;
+  channel: DirectChannel;
+  action: LimitEventAction;
+  amount: number | null;
+  effectiveAt: string;
+  publishedAt: string | null;
+  sourceUrl: string;
+  sourceAdapter: string;
+}
+
+export interface NoticeHealth {
+  candidatesDiscovered: number;
+  newNotices: number;
+  parsedNotices: number;
+  rejectedNotices: number;
+  conflicts: number;
+  cacheFallbacks: number;
+}
+
 export interface ManualChannel {
   channel: Channel;
   status: FundStatus;
@@ -141,6 +177,9 @@ export interface FetchResourceOptions {
   allowedHosts: string[];
   timeoutMs?: number;
   maxBytes?: number;
+  method?: "GET" | "POST";
+  body?: string;
+  headers?: Record<string, string>;
 }
 
 export interface Resource {
@@ -156,6 +195,8 @@ export interface CollectorContext {
   warnings: string[];
   timeoutMs: number;
   fetchResource: FetchResource;
+  eventCacheDir?: string | null;
+  noticeHealth?: NoticeHealth;
 }
 
 export interface PortfolioPlan {

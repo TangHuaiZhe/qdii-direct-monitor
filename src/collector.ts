@@ -10,6 +10,7 @@ const { collectHoldings } = require("./holdings");
 const { DEFAULT_TIMEOUT_MS, fetchResource } = require("./http");
 const { buildSnapshot, compareSnapshots, normalizeObservation } = require("./model") as typeof import("./model");
 const { notify } = require("./notify");
+const { emptyNoticeHealth } = require("./notice-events");
 const { readJson, saveRun } = require("./store");
 
 const GRADE = { A: 4, B: 3, C: 2, D: 1 };
@@ -70,7 +71,7 @@ function shareFetches(fetchResource: CollectorContext["fetchResource"]): Collect
   const succeeded = new Map<string, Awaited<ReturnType<CollectorContext["fetchResource"]>>>();
   const inflight = new Map<string, ReturnType<CollectorContext["fetchResource"]>>();
   return (url, options) => {
-    const key = `${url}\n${[...(options?.allowedHosts || [])].sort().join(",")}`;
+    const key = `${options?.method || "GET"}\n${url}\n${options?.body || ""}\n${[...(options?.allowedHosts || [])].sort().join(",")}`;
     const cached = succeeded.get(key);
     if (cached) return Promise.resolve(cached);
     const pending = inflight.get(key);
@@ -92,7 +93,16 @@ function shareFetches(fetchResource: CollectorContext["fetchResource"]): Collect
 async function run(config: MonitorConfig, options: { observedAt?: string; fetchResource?: CollectorContext["fetchResource"]; baseDir?: string; save?: boolean } = {}) {
   const observedAt = options.observedAt || new Date().toISOString();
   const warnings: string[] = [];
-  const context: CollectorContext = { observedAt, warnings, timeoutMs: config.fetch?.timeoutMs || DEFAULT_TIMEOUT_MS, fetchResource: shareFetches(options.fetchResource || fetchResource) };
+  const outputDir = path.resolve(options.baseDir || process.cwd(), config.outputDir || "data");
+  const noticeHealth = emptyNoticeHealth();
+  const context: CollectorContext = {
+    observedAt,
+    warnings,
+    timeoutMs: config.fetch?.timeoutMs || DEFAULT_TIMEOUT_MS,
+    fetchResource: shareFetches(options.fetchResource || fetchResource),
+    eventCacheDir: options.save === false ? null : path.join(outputDir, "events"),
+    noticeHealth
+  };
   const enabledFunds = config.funds.filter((f) => f.enabled !== false);
   const batches = await mapLimit(enabledFunds, config.fetch?.concurrency || 3, async (fund) => {
     const adapter = adapters[fund.adapter];
@@ -122,13 +132,12 @@ async function run(config: MonitorConfig, options: { observedAt?: string; fetchR
     return { fundCode: fund.code, portfolioCode: fund.code, sourceCode: null, exposure: "unknown", asOf: null, items: [], observedAt,
       source: null, reliability: { grade: "D", reason: "holdings source is not configured" } };
   }).sort((a, b) => a.fundCode.localeCompare(b.fundCode));
-  const outputDir = path.resolve(options.baseDir || process.cwd(), config.outputDir || "data");
   const before = readJson(path.join(outputDir, "state.json"), null) as Snapshot | null;
   const snapshot = stableSnapshot(observedAt, rows, before, fetchedFees, fetchedHoldings);
   const fees = snapshot.fees || fetchedFees;
   const holdings = snapshot.holdings || fetchedHoldings;
   const changes = compareSnapshots(before, snapshot);
-  const payload: any = { schemaVersion: 3, observedAt, rows, fees, holdings, changes, warnings, health: { status: rows.some((r) => r.reliability.grade !== "D") ? "ok" : "degraded" }, snapshot };
+  const payload: any = { schemaVersion: 3, observedAt, rows, fees, holdings, changes, warnings, health: { status: rows.some((r) => r.reliability.grade !== "D") ? "ok" : "degraded" }, noticeHealth, snapshot };
   const held = rows.filter((row) => {
     const prior = before?.byKey?.[row.key];
     return row.reliability.grade === "D" && prior && prior.reliability?.grade !== "D";

@@ -39,9 +39,11 @@ async function fetchOnce(target, options) {
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs || DEFAULT_TIMEOUT_MS);
   try {
     const response = await fetch(target, {
+      method: options.method || "GET",
+      body: options.body,
       redirect: "follow",
       signal: controller.signal,
-      headers: { "user-agent": "qdii-direct-monitor/0.1 (+public-data-monitor)" }
+      headers: { "user-agent": "qdii-direct-monitor/0.1 (+public-data-monitor)", ...(options.headers || {}) }
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const finalTarget = new URL(response.url);
@@ -65,6 +67,7 @@ async function fetchResource(url, options: any = {}) {
     throw new Error("source URL must be credential-free HTTP or HTTPS");
   }
   if (!hostAllowed(target.hostname, options.allowedHosts || [])) throw new Error(`source host is not allowed: ${target.hostname}`);
+  if (!['GET', 'POST'].includes(options.method || "GET")) throw new Error("source request method must be GET or POST");
   const retries = Number.isInteger(options.retries) ? options.retries : 1;
   const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS;
   let lastError;

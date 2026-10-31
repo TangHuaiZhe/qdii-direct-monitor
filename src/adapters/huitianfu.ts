@@ -1,6 +1,7 @@
 "use strict";
 const { createAdapter } = require("./base");
-const { focusText, parseAmount, parseStatus } = require("../parser");
+const { extractPdfLinks, focusText, parseAmount, parseStatus, resourceToHtml } = require("../parser");
+const { readEventCache, updateNoticeTimeline } = require("../notice-events");
 
 function focusCurrentStatus(text, fund) {
   const matches = [...text.matchAll(new RegExp(`(?:^|\\s)${fund.code}(?=\\s|$)`, "g"))];
@@ -29,4 +30,54 @@ function parseCurrentShareAmount(text, fund) {
   return parseAmount(text);
 }
 
-module.exports = createAdapter({ id: "huitianfu", manager: "汇添富基金", allowedHosts: ["99fund.com"], focus: focusFundText, parseAmount: parseCurrentShareAmount, parseStatus: parseCurrentStatus, defaultSource: (f) => `https://www.99fund.com/main/products/pofund/${f.code}/fundgg.shtml`, detailSource: (f) => `https://www.99fund.com/main/products/pofund/${f.code}/fundnav.shtml` });
+function discoverNoticeCandidates(html, baseUrl) {
+  const candidates = [];
+  const rowPattern = /<tr>([\s\S]*?)<\/tr>/gi;
+  let row;
+  while ((row = rowPattern.exec(String(html || "")))) {
+    const link = row[1].match(/<a\b[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/i);
+    const date = row[1].match(/(20\d{2}-\d{2}-\d{2})/);
+    if (!link || !date) continue;
+    const title = link[2].replace(/\s+/g, " ").trim();
+    if (!/纳斯达克100/.test(title) || !/(申购|限额|暂停|恢复)/.test(title)) continue;
+    const url = new URL(link[1], baseUrl).toString();
+    candidates.push({ manager: "汇添富基金", title, url, cacheKey: `${url}#pdf-attachment-v1`, publishedAt: date[1], fundCodes: [],
+      currencyScope: /美元/.test(title) ? "USD" : (/人民币/.test(title) ? "CNY" : "all"), shareClasses: [],
+      eventHint: /恢复申购/.test(title) ? "resume" : (/暂停申购/.test(title) && !/大额/.test(title) ? "suspend-all" : "unknown") });
+  }
+  return candidates.slice(0, 12);
+}
+
+const adapter = createAdapter({ id: "huitianfu", manager: "汇添富基金", allowedHosts: ["99fund.com"], focus: focusFundText, parseAmount: parseCurrentShareAmount, parseStatus: parseCurrentStatus, defaultSource: (f) => `https://www.99fund.com/main/products/pofund/${f.code}/fundgg.shtml`, detailSource: (f) => `https://www.99fund.com/main/products/pofund/${f.code}/fundnav.shtml` });
+const collectBase = adapter.collect.bind(adapter);
+
+adapter.collect = async function collect(fund, context) {
+  if (fund.code === "001668") return collectBase(fund, context);
+  const safeFund = { ...fund, officialSources: fund.officialSources?.map((source) => ({ ...source, followLinks: false })) };
+  const rows = await collectBase(safeFund, context);
+  try {
+    const endpoint = `https://www.99fund.com/cgi-bin/news/Article?function=ajaxXxplList&func=fndgg&fundId=${fund.code}`;
+    const body = new URLSearchParams({ curPage: "1", numPerPage: "20", fundId: fund.code, parentId: "2971", func: "fndgg", catalogId: "" }).toString();
+    const index = await context.fetchResource(endpoint, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs, method: "POST", body,
+      headers: { "content-type": "application/x-www-form-urlencoded;charset=UTF-8" } });
+    const html = new TextDecoder("gb18030").decode(index.bytes);
+    const candidates = discoverNoticeCandidates(html, endpoint);
+    const timeline = await updateNoticeTimeline({ adapter: this, fund, context, candidates, fetchCandidate: async (candidate) => {
+      const article = await context.fetchResource(candidate.url, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
+      const pdfUrl = extractPdfLinks(resourceToHtml(article), article.finalUrl)[0];
+      if (!pdfUrl) throw new Error("official notice article has no PDF attachment");
+      candidate.url = pdfUrl;
+      return context.fetchResource(pdfUrl, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
+    } });
+    if (timeline) rows.push(timeline);
+  } catch (error) {
+    context.warnings.push(`${fund.code} huitianfu notices: ${error.message}`);
+    if (readEventCache(context.eventCacheDir, this.id, fund.code).length && context.noticeHealth) context.noticeHealth.cacheFallbacks += 1;
+    const timeline = await updateNoticeTimeline({ adapter: this, fund, context, candidates: [] });
+    if (timeline) rows.push(timeline);
+  }
+  return rows;
+};
+
+module.exports = adapter;
+module.exports.discoverNoticeCandidates = discoverNoticeCandidates;

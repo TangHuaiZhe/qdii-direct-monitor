@@ -101,6 +101,7 @@ test("collector runs with injected sources and no persistence", async () => {
   assert.equal(result.fees[0].annualRate, 0.8);
   assert.equal(result.holdings[0].items[0].code, "NVDA");
   assert.equal(result.notification.reason, "no-changes");
+  assert.deepEqual(result.noticeHealth, { candidatesDiscovered: 0, newNotices: 0, parsedNotices: 0, rejectedNotices: 0, conflicts: 0, cacheFallbacks: 0 });
 });
 
 test("one run fetches a shared official URL once", async () => {

@@ -3,7 +3,7 @@
 import type { CollectorContext, DirectChannel, Fund, FundStatus, ObservationInput, OfficialSource, Resource } from "../types";
 
 const { fetchResource } = require("../http");
-const { extractPdfLinks, extractRelevantLinks, focusText, inferChannels, parseAmount, parseEffectiveDate, parseShareAmount, parseStatus, resourceToHtml, resourceToText } = require("../parser");
+const { extractPdfLinks, extractRelevantLinks, focusText, inferChannels, parseEffectiveDate, parseLimitEvent, parseStatus, resourceToHtml, resourceToText } = require("../parser");
 
 class OfficialDirectAdapter {
   id: string;
@@ -25,11 +25,15 @@ class OfficialDirectAdapter {
   async parseResource(resource: Resource, fund: Fund, source: OfficialSource, observedAt: string): Promise<ObservationInput[]> {
     const fullText = await resourceToText(resource);
     const text = this.focus ? this.focus(fullText, fund) : focusText(fullText, fund);
-    const amount = this.parseAmount ? this.parseAmount(text, fund) : (parseShareAmount(text, fund) || parseAmount(text));
+    const mentionedCodes = source.kind === "notice" ? (fullText.match(/\b\d{6}\b/g) || []) : [];
+    const appliesToFund = !mentionedCodes.length || mentionedCodes.includes(fund.code);
+    const event = appliesToFund && !this.parseAmount ? parseLimitEvent(text, fund) : null;
+    const amount = appliesToFund ? (this.parseAmount ? this.parseAmount(text, fund) : event) : null;
     const inferredChannels = inferChannels(text);
     let channels = (source.channels || (source.channel ? [source.channel] : inferredChannels.filter((channel) => channel.kind === "direct"))) as DirectChannel[];
     if (!channels.length) channels = [{ kind: "direct", access: "all" }];
     let status: FundStatus = this.parseStatus ? this.parseStatus(text, fund) : parseStatus(text);
+    if (!appliesToFund) status = "unknown";
     if (status === "unknown" && amount) status = "limited";
     if (status === "limited" && !amount) status = "unknown";
     const explicitChannel = Boolean(source.channels || source.channel || inferredChannels.some((channel) => channel.kind === "direct"));
@@ -37,7 +41,7 @@ class OfficialDirectAdapter {
     return channels.map((channel): ObservationInput => ({
       fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", strategy: fund.strategy || "unknown", currency: amount?.currency || fund.currency || "CNY",
       shareClass: fund.shareClass || "", channel, status, limitAmount: amount?.amount || null,
-      accountBasis: "single-fund-account-daily-cumulative", observedAt, effectiveDate: source.effectiveDate || parseEffectiveDate(fullText),
+      accountBasis: "single-fund-account-daily-cumulative", observedAt, effectiveDate: source.effectiveDate || event?.effectiveDate || parseEffectiveDate(fullText),
       salesUrl: this.salesUrl(fund),
       source: { url: resource.finalUrl, kind: source.kind || "notice", adapter: this.id },
       reliability: { grade: status === "unknown" ? "D" : grade, reason: status === "unknown" ? "page fetched but current channel limit was not safely parsed" : this.reliabilityReason(source, explicitChannel) },
@@ -63,12 +67,12 @@ class OfficialDirectAdapter {
           for (const link of links) {
             try {
               const child = await context.fetchResource(link.url, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
-              rows.push(...await this.parseResource(child, fund, { kind: "notice" }, context.observedAt));
+              rows.push(...await this.parseResource(child, fund, { kind: "notice", effectiveDate: link.publishedAt || undefined }, context.observedAt));
               if (/html/i.test(child.contentType)) {
                 for (const pdfUrl of extractPdfLinks(resourceToHtml(child), child.finalUrl)) {
                   try {
                     const pdf = await context.fetchResource(pdfUrl, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
-                    rows.push(...await this.parseResource(pdf, fund, { kind: "notice" }, context.observedAt));
+                    rows.push(...await this.parseResource(pdf, fund, { kind: "notice", effectiveDate: link.publishedAt || undefined }, context.observedAt));
                   } catch (error) { context.warnings.push(`${fund.code} linked PDF failed: ${error.message}`); }
                 }
               }

@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { focusText, inferChannels, parseAmount, parseEffectiveDate, parseShareAmount, parseStatus, resourceToText } = require("../src/parser");
+const { extractRelevantLinks, focusText, inferChannels, parseAmount, parseEffectiveDate, parseLimitEvent, parseShareAmount, parseStatus, pdfItemsToText, resourceToText } = require("../src/parser");
 
 test("parses Chinese ten-thousand amount", () => assert.equal(parseAmount("单日单个基金账户累计申购金额不超过 1 万元").amount, 10000));
 test("parses direct product-page wording", () => {
@@ -36,6 +36,37 @@ test("parses a PDF sentence using the RMB-yuan unit", () => {
 test("uses the newest business date when a notice cites the prior limit", () => {
   const text = "公告送出日期：2026 年 09 月 04 日 自 2026 年 09 月 03 日起限制金额为2000元；自 2026 年 09 月 04 日起调整限制金额为10元";
   assert.equal(parseEffectiveDate(text), "2026-09-04");
+});
+test("binds the newest effective date to its own amount instead of an earlier amount", () => {
+  const text = "自2026年9月3日起限制申购金额为50元；自2026年9月4日起调整限制申购金额为10元";
+  assert.deepEqual(parseLimitEvent(text, { code: "019441", currency: "CNY" }), { amount: 10, currency: "CNY", effectiveDate: "2026-09-04" });
+});
+test("does not carry an old amount into a newer amount-free restriction clause", () => {
+  const text = "自2026年9月3日起限制申购金额为50元；自2026年9月4日起继续暂停大额申购";
+  assert.equal(parseLimitEvent(text, { code: "019441", currency: "CNY" }), null);
+});
+test("reconstructs PDF rows by coordinates before flattening text", () => {
+  const items = [
+    { str: "50", transform: [1, 0, 0, 1, 200, 90] },
+    { str: "018044", transform: [1, 0, 0, 1, 200, 100] },
+    { str: "基金代码", transform: [1, 0, 0, 1, 10, 100] },
+    { str: "018043", transform: [1, 0, 0, 1, 100, 100] },
+    { str: "限制金额", transform: [1, 0, 0, 1, 10, 90] },
+    { str: "10", transform: [1, 0, 0, 1, 100, 90] }
+  ];
+  assert.equal(pdfItemsToText(items), "基金代码 018043 018044\n限制金额 10 50");
+});
+test("ranks exact and newer notice links instead of taking page order", () => {
+  const html = [
+    '<a href="old.html">纳斯达克基金暂停大额申购 2026-01-01</a>',
+    '<a href="other.html">纳指基金恢复申购 2026-10-30</a>',
+    '<a href="exact.html">019441 暂停大额申购 2026-09-09</a>',
+    '<a href="new.html">纳斯达克基金调整限额 2026-10-20</a>'
+  ].join("");
+  const links = extractRelevantLinks(html, "https://www.example.com/notices/", { code: "019441", name: "万家纳斯达克100指数" });
+  assert.equal(links[0].url, "https://www.example.com/notices/exact.html");
+  assert.equal(links[1].url, "https://www.example.com/notices/other.html");
+  assert.equal(links[0].publishedAt, "2026-09-09");
 });
 test("decodes GBK official pages according to the response charset", async () => {
   const bytes = Buffer.concat([Buffer.from("<p>"), Buffer.from([0xc9, 0xea, 0xb9, 0xba]), Buffer.from("</p>")]);

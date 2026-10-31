@@ -76,6 +76,17 @@ test("official HTTP sources on allowed hosts can be fetched", async () => {
   assert.equal(resource.finalUrl, "http://www.byfunds.com/fundDetail/019736/index.html");
 });
 
+test("public form POST sources are forwarded without credentials", async () => {
+  let received;
+  await withFetch(async (_url, options) => {
+    received = options;
+    return response("ok", 200, "https://example.com/notices");
+  }, () => fetchResource("https://example.com/notices", { allowedHosts: ["example.com"], method: "POST", body: "fundId=018966", headers: { "content-type": "application/x-www-form-urlencoded" } }));
+  assert.equal(received.method, "POST");
+  assert.equal(received.body, "fundId=018966");
+  assert.equal(received.headers["content-type"], "application/x-www-form-urlencoded");
+});
+
 test("an aborted request reports the timeout", async () => {
   await withFetch(async () => {
     const error = new Error("This operation was aborted");

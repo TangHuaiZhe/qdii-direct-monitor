@@ -1,6 +1,7 @@
 "use strict";
 const { createAdapter } = require("./base");
 const { resourceToText } = require("../parser");
+const { readEventCache, updateNoticeTimeline } = require("../notice-events");
 
 function decodeNoticeRecords(text) {
   const match = String(text || "").match(/var FundPost\d+\s*=\s*(\{[\s\S]*?\});/);
@@ -31,6 +32,23 @@ function pickLatestNotice(text, fund) {
   ) || null;
 }
 
+function discoverNoticeCandidates(text, fund) {
+  return decodeNoticeRecords(text).filter((notice) =>
+    noticeAppliesToFund(notice.title, fund) &&
+    /纳斯达克100.*联接基金|纳指100ETF联接/.test(notice.title) &&
+    /(暂停申购|恢复申购|限制申购|限额|调整大额申购)/.test(notice.title)
+  ).map((notice) => ({
+    manager: "广发基金",
+    title: notice.title,
+    url: notice.url.replace(/^http:/, "https:"),
+    publishedAt: notice.date || null,
+    fundCodes: [],
+    currencyScope: /美元/.test(notice.title) ? "USD" : (/人民币/.test(notice.title) ? "CNY" : "all"),
+    shareClasses: [],
+    eventHint: /恢复申购/.test(notice.title) ? "resume" : (/暂停申购/.test(notice.title) && !/大额/.test(notice.title) ? "suspend-all" : "unknown")
+  })).slice(0, 12);
+}
+
 const adapter = createAdapter({ id: "gf", manager: "广发基金", allowedHosts: ["gffunds.com.cn"], defaultSource: (f) => `https://gfwx.gffunds.com.cn/funds/?fundcode=${f.code}` });
 const collectBase = adapter.collect.bind(adapter);
 
@@ -39,20 +57,19 @@ adapter.collect = async function collect(fund, context) {
   try {
     const searchUrl = `https://www.gffunds.com.cn/was5/web/search?channelid=228364&page=1&searchword=${encodeURIComponent(fund.code)}`;
     const search = await context.fetchResource(searchUrl, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
-    const notice = pickLatestNotice(await resourceToText(search), fund);
-    if (!notice) return rows;
-    const url = notice.url.replace(/^http:/, "https:");
-    const pdf = await context.fetchResource(url, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
-    rows.push(...await this.parseResource(pdf, fund, {
-      kind: "notice",
-      channel: { kind: "direct", access: "all" },
-      effectiveDate: notice.date
-    }, context.observedAt));
+    const candidates = discoverNoticeCandidates(await resourceToText(search), fund);
+    const timeline = await updateNoticeTimeline({ adapter: this, fund, context, candidates });
+    if (timeline) rows.push(timeline);
   } catch (error) {
     context.warnings.push(`${fund.code} gf notices: ${error.message}`);
+    const cached = readEventCache(context.eventCacheDir, this.id, fund.code);
+    if (cached.length && context.noticeHealth) context.noticeHealth.cacheFallbacks += 1;
+    const timeline = await updateNoticeTimeline({ adapter: this, fund, context, candidates: [] });
+    if (timeline) rows.push(timeline);
   }
   return rows;
 };
 
 module.exports = adapter;
+module.exports.discoverNoticeCandidates = discoverNoticeCandidates;
 module.exports.pickLatestNotice = pickLatestNotice;

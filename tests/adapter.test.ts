@@ -33,6 +33,14 @@ test("unparseable official page is unknown, never open", async () => {
   assert.equal(rows[0].reliability.grade, "D");
 });
 
+test("a notice for another explicit fund code cannot change the requested fund", async () => {
+  const context = { observedAt: "2026-10-31T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => ({ bytes: Buffer.from("019442 暂停申购，自2026年10月31日起执行"), contentType: "text/html", finalUrl: url }) };
+  const rows = await huaan.collect({ code: "040046", name: "华安纳指", manager: "华安基金", officialSources: [{ url: "https://www.huaan.com.cn/x", kind: "notice" }] }, context);
+  assert.equal(rows[0].status, "unknown");
+  assert.equal(rows[0].reliability.grade, "D");
+});
+
 test("one notice can explicitly cover web, app, and counter direct channels", async () => {
   const context = { observedAt: "2026-08-29T00:00:00Z", warnings: [], timeoutMs: 10,
     fetchResource: async (url) => ({ bytes: Buffer.from("040046 限制申购金额（单位：人民币元） 100.00 暂停大额申购"), contentType: "text/html", finalUrl: url }) };
@@ -332,6 +340,44 @@ test("Gf picks the latest applicable official notice for the share class", () =>
   ]};`;
   assert.equal(gf.pickLatestNotice(scoped, { code: "000055", currency: "USD" }).url, "http://www.gffunds.com.cn/suspend-usd.pdf");
   assert.equal(gf.pickLatestNotice(scoped, { code: "270042", currency: "CNY" }).url, "http://www.gffunds.com.cn/resume-rmb.pdf");
+});
+
+test("Gf discovers normalized notice candidates for the event pipeline", () => {
+  const notices = `var FundPost4 = {"RECORDS":[
+    {"DOCTITLE":"关于广发纳斯达克100交易型开放式指数证券投资基金联接基金（QDII）人民币份额恢复申购业务的公告","DOCPUBURL":"http://www.gffunds.com.cn/resume.pdf","DOCRELTIME":"2026.10.12 15:52:00"},
+    {"DOCTITLE":"关于广发纳斯达克100交易型开放式指数证券投资基金联接基金（QDII）美元份额暂停申购业务的公告","DOCPUBURL":"http://www.gffunds.com.cn/usd.pdf","DOCRELTIME":"2026.09.10 08:33:00"}
+  ]};`;
+  const candidates = gf.discoverNoticeCandidates(notices, { code: "270042", currency: "CNY" });
+  assert.equal(candidates.length, 1);
+  assert.deepEqual(candidates[0], {
+    manager: "广发基金",
+    title: "关于广发纳斯达克100交易型开放式指数证券投资基金联接基金（QDII）人民币份额恢复申购业务的公告",
+    url: "https://www.gffunds.com.cn/resume.pdf",
+    publishedAt: "2026-10-12",
+    fundCodes: [],
+    currencyScope: "CNY",
+    shareClasses: [],
+    eventHint: "resume"
+  });
+});
+
+test("Huitianfu discovers purchase notices from its public POST response", () => {
+  const html = `<table><tr><td><a href="/main/a/20260924/12867748.shtml?v=1">关于汇添富纳斯达克100ETF发起式联接（QDII）暂停申购业务的公告</a></td><td>2026-09-24</td><td><a href="/cgi-bin/fundproduct/FundProductAction?function=DownLoad&amp;downId=12867748">下载</a></td></tr>
+    <tr><td><a href="/main/a/report.shtml">汇添富纳斯达克100ETF联接2026年季度报告</a></td><td>2026-10-27</td><td><a href="/download-report">下载</a></td></tr></table>`;
+  const candidates = huitianfu.discoverNoticeCandidates(html, "https://www.99fund.com/cgi-bin/news/Article");
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].url, "https://www.99fund.com/main/a/20260924/12867748.shtml?v=1");
+  assert.equal(candidates[0].publishedAt, "2026-09-24");
+  assert.equal(candidates[0].eventHint, "suspend-all");
+});
+
+test("Wanjia associates each purchase notice with its adjacent date", () => {
+  const html = `<div class="m-advisory-wj-news-item clearfix"><div class="fn-left"><a href="/upload/pdf/latest.pdf" title="关于万家纳斯达克100指数型发起式证券投资基金（QDII）调整大额申购业务金额限制的公告">公告</a></div><div class="fn-right m-advisory-wj-news-item-time">2026-10-21</div></div>
+    <div class="m-advisory-wj-news-item clearfix"><div><a href="/upload/pdf/report.pdf" title="万家纳斯达克100指数基金季度报告">报告</a></div><div class="fn-right m-advisory-wj-news-item-time">2026-10-27</div></div>`;
+  const candidates = wanjia.discoverNoticeCandidates(html, "https://www.wjasset.com/products/x/index.html");
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].url, "https://www.wjasset.com/upload/pdf/latest.pdf");
+  assert.equal(candidates[0].publishedAt, "2026-10-21");
 });
 
 

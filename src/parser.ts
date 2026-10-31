@@ -17,6 +17,23 @@ function htmlToText(html) {
     .replace(/&lt;/gi, "<").replace(/&gt;/gi, ">"));
 }
 
+function pdfItemsToText(items) {
+  const positioned = items
+    .filter((item) => typeof item?.str === "string" && item.str.trim())
+    .map((item, order) => ({ text: item.str, x: Number(item.transform?.[4]) || 0, y: Number(item.transform?.[5]) || 0, order }));
+  if (!positioned.some((item) => item.x || item.y)) return positioned.map((item) => item.text).join(" ");
+  const rows: any[] = [];
+  for (const item of positioned.sort((a, b) => b.y - a.y || a.x - b.x || a.order - b.order)) {
+    let row = rows.find((candidate) => Math.abs(candidate.y - item.y) <= 2);
+    if (!row) { row = { y: item.y, items: [] }; rows.push(row); }
+    row.items.push(item);
+  }
+  return rows
+    .sort((a, b) => b.y - a.y)
+    .map((row) => row.items.sort((a, b) => a.x - b.x || a.order - b.order).map((item) => item.text).join(" "))
+    .join("\n");
+}
+
 function resourceToHtml(resource) {
   let charset = String(resource.contentType || "").match(/charset\s*=\s*([^;\s]+)/i)?.[1]?.replace(/["']/g, "").toLowerCase();
   if (!charset && /html/i.test(String(resource.contentType || ""))) {
@@ -41,7 +58,7 @@ async function resourceToText(resource) {
   const pages = [];
   for (let i = 1; i <= Math.min(doc.numPages, 12); i += 1) {
     const content = await (await doc.getPage(i)).getTextContent();
-    pages.push(content.items.map((item: any) => item.str).join(" "));
+    pages.push(pdfItemsToText(content.items));
   }
   return clean(pages.join(" "));
 }
@@ -65,6 +82,29 @@ function parseAmount(text) {
     if (Number.isFinite(value) && value > 0) return { amount: value, currency: unitBefore[1] === "美元" ? "USD" : "CNY" };
   }
   return null;
+}
+
+function parseLimitEvent(text, fund) {
+  const value = normalizeExtractedText(text);
+  const shareAmount = fund ? parseShareAmount(value, fund) : null;
+  const dates = [...value.matchAll(/(?:自|起始日[:：]?|生效日[:：]?)\s*(20\d{2})年(\d{1,2})月(\d{1,2})日/g)];
+  const dated = [];
+  for (let index = 0; index < dates.length; index += 1) {
+    const match = dates[index];
+    const end = dates[index + 1]?.index ?? Math.min(value.length, match.index + 500);
+    const segment = value.slice(match.index, end);
+    const amount = fund ? (parseShareAmount(segment, fund) || parseAmount(segment)) : parseAmount(segment);
+    if (!amount || /(?:原|此前|调整前)[^，。；]{0,40}(?:限额|限制金额)/.test(segment.slice(0, 100))) continue;
+    dated.push({ ...amount, effectiveDate: `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}` });
+  }
+  if (dated.length) {
+    const latestDate = dates.map((match) => `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`).sort().at(-1);
+    const latestEvent = dated.sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate)).at(-1);
+    return latestEvent?.effectiveDate === latestDate ? latestEvent : null;
+  }
+  if (dates.length) return null;
+  const amount = shareAmount || parseAmount(value);
+  return amount ? { ...amount, effectiveDate: parseEffectiveDate(value) } : null;
 }
 
 function parseEffectiveDate(text) {
@@ -131,10 +171,16 @@ function extractRelevantLinks(html, baseUrl, fund) {
   while ((match = re.exec(String(html || "")))) {
     const label = htmlToText(match[2]);
     if (!/(申购|限额|暂停|恢复)/.test(label)) continue;
-    if (!(label.includes(fund.code) || label.includes("纳斯达克") || label.includes("纳指"))) continue;
-    try { links.push({ url: new URL(match[1], baseUrl).toString(), label }); } catch { /* malformed link */ }
+    const nameToken = String(fund.name || "").replace(/[（(].*$/, "").slice(0, 12);
+    if (!(label.includes(fund.code) || (nameToken && label.includes(nameToken)) || label.includes("纳斯达克") || label.includes("纳指"))) continue;
+    const date = label.match(/(20\d{2})[年./-](\d{1,2})[月./-](\d{1,2})日?/) || match[0].match(/(20\d{2})[年./-](\d{1,2})[月./-](\d{1,2})日?/);
+    const publishedAt = date ? `${date[1]}-${date[2].padStart(2, "0")}-${date[3].padStart(2, "0")}` : null;
+    try { links.push({ url: new URL(match[1], baseUrl).toString(), label, publishedAt, exact: label.includes(fund.code) || Boolean(nameToken && label.includes(nameToken)) }); } catch { /* malformed link */ }
   }
-  return links.slice(0, 3);
+  return [...new Map(links.map((link) => [link.url, link])).values()]
+    .sort((a: any, b: any) => Number(b.exact) - Number(a.exact) || String(b.publishedAt || "").localeCompare(String(a.publishedAt || "")))
+    .slice(0, 12)
+    .map(({ exact, ...link }) => link);
 }
 
 function extractPdfLinks(html, baseUrl) {
@@ -147,4 +193,4 @@ function extractPdfLinks(html, baseUrl) {
   return [...new Set(links)].slice(0, 2);
 }
 
-module.exports = { clean, extractPdfLinks, extractRelevantLinks, focusText, htmlToText, inferChannels, normalizeExtractedText, parseAmount, parseEffectiveDate, parseShareAmount, parseStatus, resourceToHtml, resourceToText };
+module.exports = { clean, extractPdfLinks, extractRelevantLinks, focusText, htmlToText, inferChannels, normalizeExtractedText, parseAmount, parseEffectiveDate, parseLimitEvent, parseShareAmount, parseStatus, pdfItemsToText, resourceToHtml, resourceToText };
