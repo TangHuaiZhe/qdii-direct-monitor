@@ -50,6 +50,14 @@ test("resume events do not inherit the prior numeric limit", () => {
   assert.equal(result.state.limitAmount, null);
 });
 
+test("confirmation events preserve the restriction and refresh its evidence", () => {
+  const confirmation = event({ action: "confirm-restriction", amount: null, effectiveAt: "2026-10-29", publishedAt: "2026-10-29", sourceUrl: "https://www.gffunds.com.cn/confirm.pdf" });
+  const result = reduceLimitEvents([event({ action: "suspend-all", amount: null }), confirmation]);
+  assert.equal(result.state.status, "suspended");
+  assert.equal(result.state.limitAmount, null);
+  assert.equal(result.state.event.sourceUrl, confirmation.sourceUrl);
+});
+
 test("event cache remembers rejected sources without creating events", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "qdii-rejected-"));
   try {
@@ -57,6 +65,25 @@ test("event cache remembers rejected sources without creating events", () => {
     mergeEventCache(root, "gf", "270042", [], "2026-09-01T00:00:00Z", () => true, [rejected]);
     assert.deepEqual(readEventCache(root, "gf", "270042"), []);
     assert.deepEqual(readProcessedSources(root, "gf", "270042"), [rejected]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("timeline retries sources after the parser cache version changes", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "qdii-retry-"));
+  try {
+    const url = "https://www.gffunds.com.cn/retry.pdf";
+    mergeEventCache(root, "gf", "270042", [], "2026-09-01T00:00:00Z", () => true, [url]);
+    let fetched = 0;
+    const context = { observedAt: "2026-10-01T00:00:00Z", warnings: [], timeoutMs: 10, eventCacheDir: root,
+      noticeHealth: { candidatesDiscovered: 0, newNotices: 0, parsedNotices: 0, rejectedNotices: 0, conflicts: 0, cacheFallbacks: 0 },
+      fetchResource: async () => { fetched += 1; return { bytes: Buffer.from(""), contentType: "text/html", finalUrl: url }; } };
+    const adapter = { id: "gf", allowedHosts: ["gffunds.com.cn"], salesUrl: () => "https://www.gffunds.com.cn/fund",
+      parseResource: async () => [{ fundCode: "270042", currency: "CNY", shareClass: "A", channel: { kind: "direct", access: "all" }, status: "suspended", limitAmount: null, effectiveDate: "2026-09-02" }] };
+    const fund = { code: "270042", name: "广发纳指", manager: "广发基金", adapter: "gf", currency: "CNY", shareClass: "A" };
+    await updateNoticeTimeline({ adapter, fund, context, candidates: [{ manager: "广发基金", title: "暂停申购", url, publishedAt: "2026-09-02", fundCodes: [], currencyScope: "CNY", shareClasses: [], eventHint: "suspend-all", cacheKey: `${url}#v2` }] });
+    assert.equal(fetched, 1);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

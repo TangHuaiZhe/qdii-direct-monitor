@@ -37,16 +37,17 @@ function discoverNoticeCandidates(text, fund) {
     noticeAppliesToFund(notice.title, fund) &&
     /纳斯达克100.*联接基金|纳指100ETF联接/.test(notice.title) &&
     /(暂停申购|恢复申购|限制申购|限额|调整大额申购)/.test(notice.title)
-  ).map((notice) => ({
-    manager: "广发基金",
-    title: notice.title,
-    url: notice.url.replace(/^http:/, "https:"),
-    publishedAt: notice.date || null,
-    fundCodes: [],
-    currencyScope: /美元/.test(notice.title) ? "USD" : (/人民币/.test(notice.title) ? "CNY" : "all"),
-    shareClasses: [],
-    eventHint: /恢复申购/.test(notice.title) ? "resume" : (/暂停申购/.test(notice.title) && !/大额/.test(notice.title) ? "suspend-all" : "unknown")
-  })).slice(0, 12);
+  ).map((notice) => {
+    const url = notice.url.replace(/^http:/, "https:");
+    const eventHint = /继续暂停申购/.test(notice.title) ? "confirm-restriction" : (/恢复申购/.test(notice.title) ? "resume" : (/暂停申购/.test(notice.title) && !/大额/.test(notice.title) ? "suspend-all" : "unknown"));
+    return {
+      manager: "广发基金", title: notice.title, url,
+      cacheKey: `${url}#events-${eventHint === "confirm-restriction" ? "v4" : "v2"}`,
+      publishedAt: notice.date || null, fundCodes: [],
+      currencyScope: /美元/.test(notice.title) ? "USD" : (/人民币/.test(notice.title) ? "CNY" : "all"),
+      shareClasses: [], eventHint
+    };
+  }).slice(0, 12);
 }
 
 const adapter = createAdapter({ id: "gf", manager: "广发基金", allowedHosts: ["gffunds.com.cn"], defaultSource: (f) => `https://gfwx.gffunds.com.cn/funds/?fundcode=${f.code}` });
@@ -58,7 +59,18 @@ adapter.collect = async function collect(fund, context) {
     const searchUrl = `https://www.gffunds.com.cn/was5/web/search?channelid=228364&page=1&searchword=${encodeURIComponent(fund.code)}`;
     const search = await context.fetchResource(searchUrl, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
     const candidates = discoverNoticeCandidates(await resourceToText(search), fund);
-    const timeline = await updateNoticeTimeline({ adapter: this, fund, context, candidates });
+    const timeline = await updateNoticeTimeline({
+      adapter: this,
+      fund,
+      context,
+      candidates,
+      fetchCandidate: async (candidate) => {
+        if (candidate.eventHint === "confirm-restriction") {
+          return { bytes: Buffer.from(`${fund.code} ${candidate.title}`), contentType: "text/html", finalUrl: `${candidate.url}#title` };
+        }
+        return context.fetchResource(candidate.url, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
+      }
+    });
     if (timeline) rows.push(timeline);
   } catch (error) {
     context.warnings.push(`${fund.code} gf notices: ${error.message}`);

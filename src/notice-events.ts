@@ -40,7 +40,8 @@ function reduceLimitEvents(events: LimitEvent[]) {
     if (event.action === "set-limit") state = { status: "limited", limitAmount: event.amount, event };
     else if (event.action === "suspend-all") state = { status: "suspended", limitAmount: null, event };
     else if (event.action === "resume") state = { status: "open", limitAmount: null, event };
-    else if (!state) state = { status: "unknown", limitAmount: null, event };
+    else if (state) state = { ...state, event };
+    else state = { status: "unknown", limitAmount: null, event };
   }
   return { state, conflict: null };
 }
@@ -101,13 +102,15 @@ async function updateNoticeTimeline(options: {
       const resource = options.fetchCandidate ? await options.fetchCandidate(candidate) : await context.fetchResource(candidate.url, { allowedHosts: adapter.allowedHosts, timeoutMs: context.timeoutMs });
       const parsed = await adapter.parseResource(resource, fund, { kind: "notice", channel: { kind: "direct", access: "all" } }, context.observedAt);
       const row = parsed.find((item) => item.status !== "unknown" && item.currency === (fund.currency || "CNY"));
-      const action = row?.status === "limited" ? "set-limit" : (row?.status === "suspended" ? "suspend-all" : (row?.status === "open" ? "resume" : null));
-      if (!row || !action || !row.effectiveDate) {
+      const action = candidate.eventHint === "confirm-restriction" ? "confirm-restriction" :
+        (row?.status === "limited" ? "set-limit" : (row?.status === "suspended" ? "suspend-all" : (row?.status === "open" ? "resume" : null)));
+      const effectiveAt = action === "confirm-restriction" ? candidate.publishedAt : row?.effectiveDate;
+      if (!row || !action || !effectiveAt) {
         if (context.noticeHealth) context.noticeHealth.rejectedNotices += 1;
         continue;
       }
       freshEvents.push({ fundCode: fund.code, shareClass: fund.shareClass || null, currency: row.currency, channel: row.channel as any,
-        action, amount: action === "set-limit" ? (row.limitAmount ?? null) : null, effectiveAt: row.effectiveDate,
+        action, amount: action === "set-limit" ? (row.limitAmount ?? null) : null, effectiveAt,
         publishedAt: candidate.publishedAt, sourceUrl: candidate.url, sourceAdapter: adapter.id });
       if (context.noticeHealth) context.noticeHealth.parsedNotices += 1;
     } catch (error) {

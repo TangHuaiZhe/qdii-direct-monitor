@@ -54,7 +54,7 @@ async function resourceToText(resource) {
   }
   if (!isPdf) return htmlToText(resourceToHtml(resource));
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const doc = await pdfjs.getDocument({ data: new Uint8Array(resource.bytes), useWorkerFetch: false, isEvalSupported: false }).promise;
+  const doc = await pdfjs.getDocument({ data: Uint8Array.from(resource.bytes), useWorkerFetch: false, isEvalSupported: false }).promise;
   const pages = [];
   for (let i = 1; i <= Math.min(doc.numPages, 12); i += 1) {
     const content = await (await doc.getPage(i)).getTextContent();

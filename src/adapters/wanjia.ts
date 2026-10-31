@@ -5,7 +5,7 @@ const { readEventCache, updateNoticeTimeline } = require("../notice-events");
 
 function parseDirectAmount(text, fund) {
   const value = normalizeExtractedText(text);
-  const match = value.match(/(?:本公司)?直销渠道[^。；]{0,220}?累计金额限制(?:调整)?为?\s*([\d][\d,\s]*)元/);
+  const match = value.match(/(?:本公司)?直销渠道[^。；]{0,220}?累计金额限制(?:调整)?(?:仍)?为?\s*([\d][\d,\s]*)元/);
   if (match) {
     const amount = Number(match[1].replace(/[,\s]/g, ""));
     if (Number.isFinite(amount) && amount > 0) return { amount, currency: fund.currency || "CNY" };
@@ -20,7 +20,8 @@ function discoverNoticeCandidates(html, baseUrl) {
   let item;
   while ((item = itemPattern.exec(String(html || "")))) {
     if (!/纳斯达克100/.test(item[2]) || !/(申购|限额|暂停|恢复)/.test(item[2])) continue;
-    candidates.push({ manager: "万家基金", title: item[2], url: new URL(item[1], baseUrl).toString(), publishedAt: item[3], fundCodes: [],
+    const url = new URL(item[1], baseUrl).toString();
+    candidates.push({ manager: "万家基金", title: item[2], url, cacheKey: `${url}#events-v2`, publishedAt: item[3], fundCodes: [],
       currencyScope: "CNY", shareClasses: [], eventHint: /恢复申购/.test(item[2]) ? "resume" : "unknown" });
   }
   return candidates.slice(0, 12);
