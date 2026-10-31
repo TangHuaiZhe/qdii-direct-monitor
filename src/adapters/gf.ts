@@ -42,7 +42,7 @@ function discoverNoticeCandidates(text, fund) {
     const eventHint = /继续暂停申购/.test(notice.title) ? "confirm-restriction" : (/恢复申购/.test(notice.title) ? "resume" : (/暂停申购/.test(notice.title) && !/大额/.test(notice.title) ? "suspend-all" : "unknown"));
     return {
       manager: "广发基金", title: notice.title, url,
-      cacheKey: `${url}#events-${eventHint === "confirm-restriction" ? "v4" : "v2"}`,
+      ...(eventHint === "confirm-restriction" ? { cacheKey: `${url}#events-v4` } : {}),
       publishedAt: notice.date || null, fundCodes: [],
       currencyScope: /美元/.test(notice.title) ? "USD" : (/人民币/.test(notice.title) ? "CNY" : "all"),
       shareClasses: [], eventHint
