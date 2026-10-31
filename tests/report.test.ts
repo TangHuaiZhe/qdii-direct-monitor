@@ -193,15 +193,15 @@ test("shows direct quota evidence URLs in the page for manual verification", () 
     { ...payload().rows[0], channel: { kind: "direct", access: "app" }, source: { url: "https://www.huaan.com.cn/app-notice.pdf", kind: "notice", adapter: "huaan" } }
   ] });
   const listHtml = renderHtml(source);
-  assert.match(listHtml, /class="evidence-url">https:\/\/www\.huaan\.com\.cn\/notice\.pdf</);
+  assert.match(listHtml, /class="evidence-url" href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf" target="_blank" rel="noopener noreferrer">https:\/\/www\.huaan\.com\.cn\/notice\.pdf<\/a>/);
   const detailHtml = renderFundHtml(source, "040046");
-  assert.match(detailHtml, /class="evidence-url">https:\/\/www\.huaan\.com\.cn\/notice\.pdf</);
-  assert.match(detailHtml, /class="evidence-url">https:\/\/www\.huaan\.com\.cn\/app-notice\.pdf</);
+  assert.match(detailHtml, /class="evidence-url" href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf" target="_blank" rel="noopener noreferrer">https:\/\/www\.huaan\.com\.cn\/notice\.pdf<\/a>/);
+  assert.match(detailHtml, /class="evidence-url" href="https:\/\/www\.huaan\.com\.cn\/app-notice\.pdf" target="_blank" rel="noopener noreferrer">https:\/\/www\.huaan\.com\.cn\/app-notice\.pdf<\/a>/);
 });
 
 test("shows the direct source URL even when it matches the sales entry", () => {
   const html = renderHtml(payload());
-  assert.match(html, /class="evidence-url">https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml</);
+  assert.match(html, /class="evidence-url" href="https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml" target="_blank" rel="noopener noreferrer">https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml<\/a>/);
 });
 
 test("does not render insecure sales links", () => {
@@ -242,6 +242,16 @@ test("renders the global technology index label", () => {
   const html = renderFundHtml(source, "005698");
   assert.match(html, /QDII Monitor \/ 全球科技先锋 \/ 005698/);
   assert.doesNotMatch(html, /QDII Monitor \/ 纳斯达克100 \/ 005698/);
+});
+
+test("surfaces stale notice discovery health", () => {
+  const html = renderHtml(payload({ noticeHealth: { staleTimelines: 1, timelines: [
+    { adapter: "cmf", fundCode: "019547", latestRelevantNotice: "2026-10-14", latestParsedEvent: "2026-07-27", checkedAt: "2026-10-31T00:00:00Z", status: "stale" }
+  ] } }));
+  assert.match(html, /id="notice-health"/);
+  assert.match(html, /公告发现异常（1）/);
+  assert.match(html, /019547/);
+  assert.match(html, /2026-10-14/);
 });
 
 test("lists funds without a trusted direct observation in a collapsible footer section", () => {
