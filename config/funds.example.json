@@ -61,7 +61,7 @@
     },
     {
       "code": "001668", "name": "汇添富全球移动互联混合（QDII）人民币A", "manager": "汇添富基金", "adapter": "huitianfu", "index": "globalMobileInternet", "strategy": "active", "currency": "CNY", "shareClass": "A",
-      "officialSources": [{ "url": "https://www.99fund.com/main/products/pofund/index.shtml", "kind": "current-status", "channel": { "kind": "direct", "access": "web" } }],
+      "officialSources": [{ "url": "https://www.99fund.com/main/products/pofund/001668/fundgg.shtml", "kind": "notice-index", "followLinks": true }],
       "agency": { "eastmoney": true }, "manualChannels": []
     },
     {

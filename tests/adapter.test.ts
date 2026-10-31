@@ -74,21 +74,31 @@ test("funds with official notice indexes do not also pin stale notice PDFs", () 
 
 test("adapters with stable notice indexes never pin historical notice attachments", () => {
   const config = require("../config/funds.example.json");
-  for (const fund of config.funds.filter((item) => ["ccb", "huitianfu", "wanjia"].includes(item.adapter) && item.code !== "001668")) {
+  for (const fund of config.funds.filter((item) => ["ccb", "huitianfu", "wanjia"].includes(item.adapter))) {
     assert.ok(fund.officialSources.some((source) => source.kind === "notice-index"), fund.code);
     assert.equal(fund.officialSources.some((source) => source.kind === "notice" || /\.(?:pdf|docx?)(?:$|\?)/i.test(source.url)), false, fund.code);
   }
 });
 
-test("Huitianfu parses the current global mobile internet subscription status", async () => {
-  const text = "001668 汇添富全球移动互联混合（QDII）人民币A 2026-09-05 5.2195 5.2195 正常 申购 定投";
-  const context = { observedAt: "2026-09-06T00:00:00Z", warnings: [], timeoutMs: 10,
-    fetchResource: async (url) => ({ bytes: Buffer.from(text), contentType: "text/html", finalUrl: url }) };
-  const rows = await huitianfu.collect({ code: "001668", name: "汇添富全球移动互联混合（QDII）人民币A", manager: "汇添富基金", index: "globalMobileInternet", currency: "CNY", shareClass: "A",
-    officialSources: [{ url: "https://www.99fund.com/main/products/pofund/index.shtml", kind: "current-status", channel: { kind: "direct", access: "web" } }] }, context);
-  assert.equal(rows[0].status, "open");
+test("Huitianfu parses 001668 suspension notices instead of a stale status list", async () => {
+  const text = "关于汇添富全球移动互联灵活配置混合型证券投资基金暂停申购、定期定额投资业务的公告 公告送出日期：2026年10月23日 下属基金份额的交易代码 001668 015202 015203 006426 该基金份额是否暂停上述业务 是 是 是 否 暂停申购起始日 2026年10月23日";
+  const rows = await huitianfu.parseResource({ bytes: Buffer.from(text), contentType: "text/html", finalUrl: "https://www.99fund.com/notice.html" },
+    { code: "001668", name: "汇添富全球移动互联混合（QDII）人民币A", manager: "汇添富基金", index: "globalMobileInternet", currency: "CNY", shareClass: "A" },
+    { kind: "notice", channel: { kind: "direct", access: "all" } }, "2026-10-31T00:00:00Z");
+  assert.equal(rows[0].status, "suspended");
   assert.equal(rows[0].index, "globalMobileInternet");
-  assert.equal(rows[0].reliability.grade, "A");
+  assert.equal(rows[0].reliability.grade, "B");
+});
+
+test("Huitianfu discovers 001668 global mobile internet purchase notices", () => {
+  const html = `<table>
+    <tr><td><a href="/main/a/20261023/12868100.shtml">关于汇添富全球移动互联灵活配置混合型证券投资基金暂停申购、定期定额投资业务的公告</a></td><td>2026-10-23</td></tr>
+    <tr><td><a href="/main/a/20261027/report.shtml">汇添富全球移动互联混合2026年第三季度报告</a></td><td>2026-10-27</td></tr>
+  </table>`;
+  const candidates = huitianfu.discoverNoticeCandidates(html, "https://www.99fund.com/cgi-bin/news/Article", { code: "001668", index: "globalMobileInternet" });
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].url, "https://www.99fund.com/main/a/20261023/12868100.shtml");
+  assert.equal(candidates[0].eventHint, "suspend-all");
 });
 
 test("Southern parses the latest A-share purchase limit notice", async () => {
@@ -276,9 +286,9 @@ test("config tracks 汇添富全球移动互联人民币A share 001668", () => {
     currency: "CNY",
     shareClass: "A",
     source: {
-      url: "https://www.99fund.com/main/products/pofund/index.shtml",
-      kind: "current-status",
-      channel: { kind: "direct", access: "web" }
+      url: "https://www.99fund.com/main/products/pofund/001668/fundgg.shtml",
+      kind: "notice-index",
+      followLinks: true
     }
   });
 });

@@ -30,8 +30,9 @@ function parseCurrentShareAmount(text, fund) {
   return parseAmount(text);
 }
 
-function discoverNoticeCandidates(html, baseUrl) {
+function discoverNoticeCandidates(html, baseUrl, fund) {
   const candidates = [];
+  const titleKeyword = fund?.index === "globalMobileInternet" ? /全球移动互联/ : /纳斯达克100/;
   const rowPattern = /<tr>([\s\S]*?)<\/tr>/gi;
   let row;
   while ((row = rowPattern.exec(String(html || "")))) {
@@ -39,7 +40,7 @@ function discoverNoticeCandidates(html, baseUrl) {
     const date = row[1].match(/(20\d{2}-\d{2}-\d{2})/);
     if (!link || !date) continue;
     const title = link[2].replace(/\s+/g, " ").trim();
-    if (!/纳斯达克100/.test(title) || !/(申购|限额|暂停|恢复)/.test(title)) continue;
+    if (!titleKeyword.test(title) || !/(申购|限额|暂停|恢复)/.test(title)) continue;
     const url = new URL(link[1], baseUrl).toString();
     candidates.push({ manager: "汇添富基金", title, url, cacheKey: `${url}#pdf-attachment-v1`, publishedAt: date[1], fundCodes: [],
       currencyScope: /美元/.test(title) ? "USD" : (/人民币/.test(title) ? "CNY" : "all"), shareClasses: [],
@@ -52,7 +53,6 @@ const adapter = createAdapter({ id: "huitianfu", manager: "汇添富基金", all
 const collectBase = adapter.collect.bind(adapter);
 
 adapter.collect = async function collect(fund, context) {
-  if (fund.code === "001668") return collectBase(fund, context);
   const safeFund = { ...fund, officialSources: fund.officialSources?.map((source) => ({ ...source, followLinks: false })) };
   const rows = await collectBase(safeFund, context);
   try {
@@ -61,7 +61,7 @@ adapter.collect = async function collect(fund, context) {
     const index = await context.fetchResource(endpoint, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs, method: "POST", body,
       headers: { "content-type": "application/x-www-form-urlencoded;charset=UTF-8" } });
     const html = new TextDecoder("gb18030").decode(index.bytes);
-    const candidates = discoverNoticeCandidates(html, endpoint);
+    const candidates = discoverNoticeCandidates(html, endpoint, fund);
     const timeline = await updateNoticeTimeline({ adapter: this, fund, context, candidates, fetchCandidate: async (candidate) => {
       const article = await context.fetchResource(candidate.url, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
       const pdfUrl = extractPdfLinks(resourceToHtml(article), article.finalUrl)[0];
