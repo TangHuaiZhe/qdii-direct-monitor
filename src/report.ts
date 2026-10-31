@@ -168,6 +168,20 @@ function aggregateStatus(rows) {
   return "unknown";
 }
 
+function changeValue(row) {
+  if (!row) return "无记录";
+  const amount = row.status === "limited" ? ` ${amountLabel(row)}` : "";
+  return `${statusLabel(row.status)}${amount}`;
+}
+
+function changeDescription(change) {
+  const row = change.after || change.before;
+  const channel = row?.channel ? channelLabel(row.channel) : "渠道";
+  if (change.type === "channel-added") return `新增${channel}：${changeValue(change.after)}`;
+  if (change.type === "channel-removed") return `移除${channel}：${changeValue(change.before)}`;
+  return `${channel}：${changeValue(change.before)} → ${changeValue(change.after)}`;
+}
+
 function fundTableRow(code, rows, fee) {
   const fund = rows[0];
   const direct = bestChannel(rows, "direct");
@@ -268,7 +282,7 @@ function renderHtml(payload) {
   const warnings = (payload.warnings || []).map((warning) => `<li>${escapeHtml(warning)}</li>`).join("");
   const changes = (payload.changes || []).map((change) => {
     const row = change.after || change.before;
-    return `<li><strong>${escapeHtml(row?.fundCode || "")}</strong> ${escapeHtml(row?.fundName || "")}：${escapeHtml(change.type)}</li>`;
+    return `<li><strong>${escapeHtml(row?.fundCode || "")}</strong> ${escapeHtml(row?.fundName || "")}：${escapeHtml(changeDescription(change))}</li>`;
   }).join("");
   return `<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -288,7 +302,7 @@ function renderHtml(payload) {
 <div class="market-rail" aria-label="监控方法与数据时间"><span class="rail-live"><i></i>最新快照</span><span>${escapeHtml(observed)}</span><span>直销优先</span><span>渠道额度不相加</span><span>A—D 证据分级</span><span>${(payload.warnings || []).length} 条抓取提示</span></div>
 <section class="stats"><div class="stat"><strong>${grouped.size}</strong><span>基金份额</span></div><div class="stat"><strong>${statuses.filter((status) => status === "limited" || status === "open").length}</strong><span>当前可申购</span></div><div class="stat"><strong>${statuses.filter((status) => status === "suspended").length}</strong><span>暂停申购</span></div><div class="stat"><strong>${feeKnown}/${grouped.size}</strong><span>综合费率已识别</span></div></section>
 ${purchaseSummaryHtml(payload.rows || [], payload.fees || [])}
-<div class="notices">${warnings ? `<details class="notice"><summary>抓取提示（${(payload.warnings || []).length}）</summary><ul>${warnings}</ul></details>` : ""}${changes ? `<details class="notice"><summary>本次额度变化（${(payload.changes || []).length}）</summary><ul>${changes}</ul></details>` : ""}</div>
+<div class="notices">${warnings ? `<details class="notice"><summary>抓取提示（${(payload.warnings || []).length}）</summary><ul>${warnings}</ul></details>` : ""}${changes ? `<details class="notice"><summary>本次申购状态与额度变化（${(payload.changes || []).length}）</summary><ul>${changes}</ul></details>` : ""}</div>
 <section class="panel"><div class="panel-head"><div><h2>基金列表</h2><p>代销、直销和年综合费率横向比较</p></div><span class="result-count"><b id="visible-count">${grouped.size}</b> 只</span></div>
 <div class="filters"><label class="search"><input id="fund-search" type="search" placeholder="搜索名称、代码、公司或拼音" aria-label="搜索基金"></label><div class="share-filters" aria-label="基金类型"><button class="filter-button active" type="button" data-strategy-filter="全部">全部</button>${strategies.map((strategy) => `<button class="filter-button" type="button" data-strategy-filter="${escapeHtml(strategy)}">${escapeHtml(strategyLabel(strategy))}</button>`).join("")}</div><div class="share-filters" aria-label="份额类别"><button class="filter-button active" type="button" data-share-filter="全部">全部</button>${shareClasses.map((share) => `<button class="filter-button" type="button" data-share-filter="${escapeHtml(share)}">${escapeHtml(share)} 类</button>`).join("")}</div><label class="toggle"><input id="purchasable-only" type="checkbox">仅看可购买</label><select id="fund-sort" class="sort" aria-label="排序方式"><option value="amount">额度从高到低</option><option value="fee">综合费率从低到高</option><option value="name">基金名称</option></select></div>
 <div class="table-wrap"><table><thead><tr><th>基金</th><th><button class="filter-button column-sort" type="button" data-column-sort="agency" aria-label="按代销渠道每日额度排序">代销渠道 <span aria-hidden="true">↕</span></button></th><th><button class="filter-button column-sort" type="button" data-column-sort="direct" aria-label="按直销渠道每日额度排序">直销渠道 <span aria-hidden="true">↕</span></button></th><th><button class="filter-button column-sort" type="button" data-column-sort="fee" aria-label="按年综合费率排序">年综合费率 ⓘ <span aria-hidden="true">↕</span></button></th></tr></thead><tbody id="fund-body">${funds.map(([code, rows]) => fundTableRow(code, rows, feeByFund.get(code))).join("")}</tbody></table><div id="empty" class="empty">没有符合当前条件的基金</div></div></section>

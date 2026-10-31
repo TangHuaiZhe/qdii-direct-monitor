@@ -109,6 +109,23 @@ test("HTML includes a concise purchase-convenience summary", () => {
   assert.match(html, /低费率/);
 });
 
+test("renders status and amount changes as readable before and after values", () => {
+  const base = payload().rows[0];
+  const html = renderHtml(payload({ changes: [{
+    type: "status-changed",
+    before: { ...base, status: "unknown", limitAmount: null },
+    after: { ...base, status: "limited", limitAmount: 100 }
+  }, {
+    type: "amount-decreased",
+    before: { ...base, status: "limited", limitAmount: 1000 },
+    after: { ...base, status: "limited", limitAmount: 100 }
+  }] }));
+  assert.match(html, /本次申购状态与额度变化（2）/);
+  assert.match(html, /网上直销：状态未知 → 限额申购 100 元/);
+  assert.match(html, /网上直销：限额申购 1,000 元 → 限额申购 100 元/);
+  assert.doesNotMatch(html, /status-changed|amount-decreased/);
+});
+
 test("renders an indexable fund detail page", () => {
   const html = renderFundHtml(payload(), "040046");
   assert.match(html, /华安纳指 040046/);
