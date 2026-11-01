@@ -134,6 +134,15 @@ GitHub Actions 在工作日北京时间 09:10、14:30、20:30 自动执行，也
 
 单个数据源失败时会降级并显示告警；测试失败时不会部署。
 
+### 访问统计
+
+站点使用 [Umami](https://umami.is/) 统计公开页面访问量，不跟踪登录态或账户信息。构建时通过仓库变量注入，未配置则不输出任何统计脚本：
+
+- `UMAMI_WEBSITE_ID`：Umami 站点 ID，配置后所有看板和详情页自动注入 `https://cloud.umami.is/script.js`。
+- `UMAMI_SCRIPT_URL`：可选，自托管 Umami 时填写脚本地址（必须是 HTTPS）。
+
+本地预览统计效果时可直接 `export UMAMI_WEBSITE_ID=...` 后再执行 `npm start`。
+
 ## 微信小程序
 
 [`miniapp/`](miniapp/) 是无第三方运行时依赖的原生微信小程序，只读取公开站点的 `latest.json`，不直接抓取基金公司，也不访问登录接口。

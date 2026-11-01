@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { amountLabel, feeBand, feeLabel, rankPurchasableFunds, reliabilityReasonLabel, renderFundHtml, renderHtml } = require("../src/report");
+const { amountLabel, analyticsSnippet, feeBand, feeLabel, rankPurchasableFunds, reliabilityReasonLabel, renderFundHtml, renderHtml } = require("../src/report");
 
 function payload(overrides = {}) {
   return { observedAt: "2026-08-29T04:47:59.125Z", gitCommit: "0123456789abcdef0123456789abcdef01234567", warnings: [], changes: [], fees: [{
@@ -327,4 +327,28 @@ test("lists funds without a trusted direct observation in a collapsible footer s
   assert.match(html, /href="https:\/\/www\.gffunds\.com\.cn\/funds\/\?fundcode=000055"[^>]*>证据<\/a>/);
   assert.ok(html.indexOf('id="missing-data"') > html.indexOf('class="method"'), "missing section follows the main list");
   assert.ok(html.indexOf('id="missing-data"') < html.indexOf('class="footer"'), "missing section stays before the footer");
+});
+
+test("injects Umami analytics only when a website id is configured", () => {
+  const saved = { id: process.env.UMAMI_WEBSITE_ID, src: process.env.UMAMI_SCRIPT_URL };
+  try {
+    delete process.env.UMAMI_WEBSITE_ID;
+    delete process.env.UMAMI_SCRIPT_URL;
+    assert.equal(analyticsSnippet(), "");
+    assert.doesNotMatch(renderHtml(payload()), /cloud\.umami\.is/);
+    assert.doesNotMatch(renderFundHtml(payload(), "040046"), /cloud\.umami\.is/);
+
+    process.env.UMAMI_WEBSITE_ID = "f4d3363b-69a2-4185-a565-c6b603b386e9";
+    const snippet = analyticsSnippet();
+    assert.match(snippet, /<script defer src="https:\/\/cloud\.umami\.is\/script\.js"/);
+    assert.match(snippet, /data-website-id="f4d3363b-69a2-4185-a565-c6b603b386e9"/);
+    assert.match(renderHtml(payload()), /data-website-id="f4d3363b-69a2-4185-a565-c6b603b386e9"><\/script><\/head>/);
+    assert.match(renderFundHtml(payload(), "040046"), /data-website-id="f4d3363b-69a2-4185-a565-c6b603b386e9"><\/script><\/head>/);
+
+    process.env.UMAMI_SCRIPT_URL = "http://insecure.example.com/script.js";
+    assert.equal(analyticsSnippet(), "");
+  } finally {
+    if (saved.id === undefined) delete process.env.UMAMI_WEBSITE_ID; else process.env.UMAMI_WEBSITE_ID = saved.id;
+    if (saved.src === undefined) delete process.env.UMAMI_SCRIPT_URL; else process.env.UMAMI_SCRIPT_URL = saved.src;
+  }
 });
