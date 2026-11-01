@@ -1,0 +1,25 @@
+{
+  "Data": {
+    "LSJZList": [
+      {
+        "FSRQ": "2026-10-29",
+        "DWJZ": "1.9663",
+        "LJJZ": "1.9663",
+        "SGZT": "暂停申购",
+        "SHZT": "场内卖出"
+      },
+      {
+        "FSRQ": "2026-10-28",
+        "DWJZ": "1.9421",
+        "LJJZ": "1.9421",
+        "SGZT": "暂停申购",
+        "SHZT": "场内卖出"
+      }
+    ]
+  },
+  "ErrCode": 0,
+  "ErrMsg": null,
+  "TotalCount": 100,
+  "PageIndex": 1,
+  "PageSize": 2
+}

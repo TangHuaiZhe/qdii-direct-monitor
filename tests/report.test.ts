@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { amountLabel, analyticsSnippet, feeBand, feeLabel, rankPurchasableFunds, reliabilityReasonLabel, renderFundHtml, renderHtml } = require("../src/report");
+const { amountLabel, analyticsSnippet, feeBand, feeLabel, formatPremium, rankPurchasableFunds, reliabilityReasonLabel, renderFundHtml, renderHtml, renderOnsiteFundHtml, onsiteSectionHtml } = require("../src/report");
 
 function payload(overrides = {}) {
   return { observedAt: "2026-08-29T04:47:59.125Z", gitCommit: "0123456789abcdef0123456789abcdef01234567", warnings: [], changes: [], fees: [{
@@ -327,6 +327,238 @@ test("lists funds without a trusted direct observation in a collapsible footer s
   assert.match(html, /href="https:\/\/www\.gffunds\.com\.cn\/funds\/\?fundcode=000055"[^>]*>证据<\/a>/);
   assert.ok(html.indexOf('id="missing-data"') > html.indexOf('class="method"'), "missing section follows the main list");
   assert.ok(html.indexOf('id="missing-data"') < html.indexOf('class="footer"'), "missing section stays before the footer");
+});
+
+function onsiteQuote(overrides = {}) {
+  return {
+    code: "513100",
+    name: "纳指ETF国泰",
+    manager: "国泰基金",
+    index: "nasdaq100",
+    exchange: "SSE",
+    vehicle: "ETF",
+    currency: "CNY",
+    price: 2.239,
+    priceAt: "2026-10-30T15:00:00+08:00",
+    priceDate: "2026-10-30",
+    refNav: 1.966,
+    refNavKind: "iopv",
+    refNavDate: "2026-10-29",
+    nav: 1.9663,
+    navDate: "2026-10-29",
+    premiumLivePct: 13.89,
+    premiumLiveBasis: "iopv",
+    premiumCalibratedPct: 2.14,
+    calibratedForDate: "2026-10-29",
+    turnoverCny: 456043207,
+    applyStatus: "暂停申购",
+    linksOtcCode: null,
+    reliability: { grade: "A", reason: "current exchange quote matched with published NAV" },
+    sources: [
+      { url: "http://yunhq.sse.com.cn:32041/v1/sh1/snap/513100", kind: "exchange-quote", adapter: "sse" },
+      { url: "https://api.fund.eastmoney.com/f10/lsjz?fundCode=513100", kind: "nav", adapter: "eastmoney" }
+    ],
+    observedAt: "2026-10-30T15:05:00+08:00",
+    notes: [],
+    carriedForward: false,
+    ...overrides
+  };
+}
+
+function normalOnsiteQuotes() {
+  const specs = [
+    ["159501", "纳指ETF嘉实", "嘉实基金", "nasdaq100", "SZSE", "ETF", 8.42, 16.84, "A"],
+    ["159513", "纳斯达克100ETF大成", "大成基金", "nasdaq100", "SZSE", "ETF", 6.13, 8.73, "A"],
+    ["159632", "纳斯达克ETF华安", "华安基金", "nasdaq100", "SZSE", "ETF", 5.77, 8.95, "B"],
+    ["159659", "纳斯达克100ETF招商", "招商基金", "nasdaq100", "SZSE", "ETF", 7.21, 10.87, "A"],
+    ["159660", "纳指ETF汇添富", "汇添富基金", "nasdaq100", "SZSE", "ETF", 6.68, 9.73, "A"],
+    ["159696", "纳指ETF易方达", "易方达基金", "nasdaq100", "SZSE", "ETF", 7.95, 13.16, "A"],
+    ["159941", "纳指ETF广发", "广发基金", "nasdaq100", "SZSE", "ETF", 5.42, 12.10, "C"],
+    ["513100", "纳指ETF国泰", "国泰基金", "nasdaq100", "SSE", "ETF", 2.14, 13.89, "A"],
+    ["513110", "纳指100ETF华泰柏瑞", "华泰柏瑞基金", "nasdaq100", "SSE", "ETF", 4.05, 8.75, "A"],
+    ["513300", "纳斯达克ETF华夏", "华夏基金", "nasdaq100", "SSE", "ETF", 4.88, 9.74, "B"],
+    ["513390", "纳指100ETF博时", "博时基金", "nasdaq100", "SSE", "ETF", 4.21, 9.67, "A"],
+    ["513870", "纳指ETF富国", "富国基金", "nasdaq100", "SSE", "ETF", 5.12, 10.37, "A"],
+    ["159612", "标普500ETF国泰", "国泰基金", "sp500", "SZSE", "ETF", 3.31, 6.45, "A"],
+    ["159655", "标普500ETF华夏", "华夏基金", "sp500", "SZSE", "ETF", 2.87, 5.98, "B"],
+    ["161125", "标普500LOF", "易方达基金", "sp500", "SZSE", "LOF", 1.02, 3.68, "B"],
+    ["161130", "纳斯达克100LOF", "易方达基金", "nasdaq100", "SZSE", "LOF", 1.74, 5.34, "B"]
+  ];
+  return specs.map(([code, name, manager, index, exchange, vehicle, calibrated, live, grade]) => onsiteQuote({
+    code,
+    name,
+    manager,
+    index,
+    exchange,
+    vehicle,
+    premiumCalibratedPct: calibrated,
+    premiumLivePct: live,
+    price: code === "513100" ? 2.239 : Number((calibrated + 1.5).toFixed(3)),
+    refNav: 1.966,
+    nav: 1.9663,
+    navDate: "2026-10-29",
+    refNavDate: "2026-10-29",
+    calibratedForDate: "2026-10-29",
+    turnoverCny: 456043207,
+    reliability: { grade, reason: "current exchange quote matched with published NAV" },
+    ...(code === "159941" ? {
+      carriedForward: true,
+      reliability: { grade: "C", reason: "carried forward: reused last trusted value" },
+      observedAt: "2026-10-29T15:05:00+08:00"
+    } : {}),
+    ...(code === "513100" ? { linksOtcCode: "016532" } : {})
+  }));
+}
+
+function degradedOnsiteQuotes() {
+  return [
+    onsiteQuote({
+      code: "513500", name: "标普500ETF博时", manager: "博时基金", index: "sp500", exchange: "SSE", vehicle: "ETF",
+      price: null, priceAt: null, priceDate: null, refNav: null, refNavKind: null, refNavDate: null, nav: null, navDate: null,
+      premiumLivePct: null, premiumLiveBasis: null, premiumCalibratedPct: null, calibratedForDate: null, turnoverCny: null,
+      reliability: { grade: "D", reason: "official quote unavailable; nav source unavailable" }, sources: []
+    }),
+    onsiteQuote({
+      code: "513650", name: "标普500ETF南方", manager: "南方基金", index: "sp500", exchange: "SSE", vehicle: "ETF",
+      price: null, priceAt: null, priceDate: null, refNav: null, refNavKind: null, refNavDate: null, nav: null, navDate: null,
+      premiumLivePct: null, premiumLiveBasis: null, premiumCalibratedPct: null, calibratedForDate: null, turnoverCny: null,
+      reliability: { grade: "D", reason: "no trading or trading suspended" }, sources: []
+    })
+  ];
+}
+
+function onsitePayload(overrides = {}) {
+  const quotes = [...normalOnsiteQuotes(), ...degradedOnsiteQuotes()];
+  return payload({
+    quotes,
+    quotesByCode: Object.fromEntries(quotes.map((quote) => [quote.code, quote])),
+    premiumSummary: {
+      asOf: "2026-10-30T15:05:00+08:00",
+      calibratedForDate: "2026-10-29",
+      count: 18,
+      degraded: 2,
+      highPremiumCodes: ["159501", "159696", "159659", "159660", "159513", "159632", "159941", "513870"],
+      thresholds: { highPremiumPct: 5, p25: 1.5, p75: 6, p90: 7.5 }
+    },
+    health: { status: "ok", exchange: { officialOk: 15, fallback: 1, failed: 2, degradedCodes: ["513500", "513650"] } },
+    ...overrides
+  });
+}
+
+test("renders the onsite premium section after the purchase summary", () => {
+  const html = renderHtml(onsitePayload());
+  assert.match(html, /id="onsite-premium"/);
+  assert.match(html, /<h2>场内折溢价<\/h2>/);
+  assert.match(html, /场内折溢价 · 校准日 2026-10-29 · 18 只 · 抓取时间/);
+  assert.match(html, /最高校准溢价/);
+  assert.match(html, /校准溢价中位数/);
+  assert.match(html, /高溢价只数/);
+  assert.match(html, /\+8\.42%/);
+  assert.match(html, /\+5\.00%/);
+  assert.match(html, /8<small> \/ 16<\/small>/);
+  assert.match(html, /校准溢价 = 同日收盘价 ÷ 同日单位净值 − 1/);
+  assert.match(html, /不代表真实溢价，也不代表套利空间/);
+  assert.match(html, /id="onsite-table"/);
+  assert.match(html, /data-onsite-index-filter="nasdaq100"/);
+  assert.match(html, /data-onsite-index-filter="sp500"/);
+  assert.match(html, /data-onsite-vehicle-filter="ETF"/);
+  assert.match(html, /data-onsite-vehicle-filter="LOF"/);
+  assert.match(html, /href="onsite\/513100\/"/);
+  assert.match(html, /官方可用 15 只 · 第三方降级 1 只 · 失败 2 只/);
+  assert.ok(html.indexOf('data-onsite-code="159501"') < html.indexOf('data-onsite-code="161125"'), "onsite rows default to calibrated premium descending");
+  assert.ok(html.indexOf("当前更方便购买") < html.indexOf('id="onsite-premium"'), "onsite section follows the purchase summary");
+  assert.ok(html.indexOf('id="onsite-premium"') < html.indexOf('id="fund-list"'), "onsite section stays above the fund list");
+  assert.match(html, /沿用上次可信值 · 原始时间/);
+  assert.match(html, /2026年10月29日 15:05:00/);
+  assert.match(html, /class="grade grade-D"/);
+  assert.match(html, /待核验/);
+  assert.match(html, /getElementById\("onsite-table"\)/);
+  assert.match(html, /getElementById\("fund-body"\)/);
+  assert.doesNotMatch(html, /href="http:\/\//);
+});
+
+test("onsite section refuses to fall back to old values without a trusted quote", () => {
+  const emptyHtml = renderHtml(onsitePayload({ quotes: [], quotesByCode: {}, premiumSummary: null }));
+  assert.match(emptyHtml, /暂无可信场内数据/);
+  assert.match(emptyHtml, /本次数据没有场内行情记录，不显示历史值/);
+  assert.doesNotMatch(emptyHtml, /id="onsite-table"/);
+  assert.doesNotMatch(emptyHtml, /\+8\.42%/);
+
+  const allDegraded = renderHtml(onsitePayload({
+    quotes: degradedOnsiteQuotes(),
+    quotesByCode: Object.fromEntries(degradedOnsiteQuotes().map((quote) => [quote.code, quote])),
+    premiumSummary: { asOf: "2026-10-30T15:05:00+08:00", calibratedForDate: null, count: 2, degraded: 2, highPremiumCodes: [], thresholds: { highPremiumPct: 5, p25: null, p75: null, p90: null } }
+  }));
+  assert.match(allDegraded, /暂无可信场内数据/);
+  assert.match(allDegraded, /本次抓取 2 只均为 D 级/);
+  assert.match(allDegraded, /交易所官方行情不可用，已降级到第三方公开行情/);
+  assert.match(allDegraded, /当日无成交或停牌/);
+  assert.doesNotMatch(allDegraded, /id="onsite-table"/);
+  assert.doesNotMatch(allDegraded, /\+8\.42%|13\.89%/);
+});
+
+test("renders an onsite detail page with metrics, evidence and the OTC link", () => {
+  const html = renderOnsiteFundHtml(onsitePayload(), "513100");
+  assert.match(html, /纳指ETF国泰 513100｜场内折溢价与参考净值/);
+  assert.match(html, /rel="canonical" href="https:\/\/tanghuaizhe\.github\.io\/qdii-direct-monitor\/onsite\/513100\/"/);
+  assert.match(html, /class="metric"/);
+  assert.match(html, /\+2\.14%/);
+  assert.match(html, /\+13\.89%/);
+  assert.match(html, /校准溢价/);
+  assert.match(html, /实时溢价/);
+  assert.match(html, /2\.239/);
+  assert.match(html, /1\.9660/);
+  assert.match(html, /IOPV 参考净值/);
+  assert.match(html, /4\.56 亿/);
+  assert.match(html, /class="grade grade-A"/);
+  assert.match(html, /http:\/\/yunhq\.sse\.com\.cn:32041\/v1\/sh1\/snap\/513100/);
+  assert.match(html, /https:\/\/api\.fund\.eastmoney\.com\/f10\/lsjz\?fundCode=513100/);
+  assert.match(html, /href="funds\/016532\/"/);
+  assert.match(html, /查看场外份额 016532 的申购额度/);
+  assert.match(html, /历史溢价不代表未来/);
+  assert.match(html, /数据仅供核验，不构成投资建议/);
+  assert.match(html, /--primary:#b4232f/);
+  assert.match(html, /application\/ld\+json/);
+});
+
+test("onsite detail page marks carried-forward values with their original time", () => {
+  const html = renderOnsiteFundHtml(onsitePayload(), "159941");
+  assert.match(html, /沿用上次可信值 · 原始时间/);
+  assert.match(html, /2026年10月29日 15:05:00/);
+  assert.match(html, /不代表最新行情/);
+});
+
+test("onsite detail page renders D grades as 待核验 without inventing premiums", () => {
+  const html = renderOnsiteFundHtml(onsitePayload(), "513500");
+  assert.match(html, /class="grade grade-D"/);
+  assert.match(html, /本次数据为 D 级/);
+  assert.match(html, /交易所官方行情不可用/);
+  assert.match(html, /待核验/);
+  assert.doesNotMatch(html, /\+\d+\.\d\d%/);
+});
+
+test("onsite detail page rejects unknown codes and insecure external sources", () => {
+  assert.equal(renderOnsiteFundHtml(onsitePayload(), "000000"), null);
+  const malicious = onsiteQuote({ sources: [{ url: "http://evil.example.com/quote", kind: "exchange-quote", adapter: "evil" }] });
+  const html = renderOnsiteFundHtml(onsitePayload({ quotes: [malicious], quotesByCode: { "513100": malicious } }), "513100");
+  assert.doesNotMatch(html, /evil\.example\.com/);
+  assert.match(html, /本次没有可公开展示的来源链接/);
+});
+
+test("localizes onsite reliability explanations", () => {
+  assert.equal(reliabilityReasonLabel("current exchange quote matched with published NAV"), "交易所官方行情与同日参考净值匹配，可校准");
+  assert.equal(reliabilityReasonLabel("official quote unavailable; used eastmoney quote"), "交易所官方行情不可用，已降级到第三方公开行情");
+  assert.equal(reliabilityReasonLabel("carried forward: reused last trusted value"), "沿用上一次可信值，非本次抓取结果");
+  assert.equal(reliabilityReasonLabel("official exchange reference NAV cross-checked against the published unit NAV"), "交易所官方行情与已公布净值交叉校验一致");
+  assert.equal(reliabilityReasonLabel("official reference NAV unavailable; the published unit NAV is used as the premium denominator"), "交易所参考净值不可用，改用已公布单位净值作为分母");
+  assert.equal(reliabilityReasonLabel("published NAV lags the price date by 2 trading day(s) (> 1); the live premium is indicative only"), "净值日期滞后，实时口径仅作参考，校准口径等待净值公布");
+  assert.equal(reliabilityReasonLabel("no trading volume for this listing (possible suspension); premium withheld"), "当日无成交或停牌，不使用该价格");
+  assert.equal(reliabilityReasonLabel("premium unavailable"), "本次无法计算可信溢价，暂不展示数值");
+  assert.equal(reliabilityReasonLabel("premium unverified: some new agent reason"), "premium unverified: some new agent reason");
+  assert.equal(formatPremium(2.14), "+2.14%");
+  assert.equal(formatPremium(-1.2), "-1.20%");
+  assert.equal(formatPremium(null), "待核验");
+  assert.match(onsiteSectionHtml(onsitePayload()), /场内折溢价/);
 });
 
 test("injects Umami analytics only when a website id is configured", () => {

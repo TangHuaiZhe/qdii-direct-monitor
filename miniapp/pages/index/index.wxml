@@ -2,7 +2,10 @@
   <view class="hero">
     <view class="hero-top">
       <text class="eyebrow">直销优先 · 代销补充</text>
-      <button class="about" bindtap="openAbout">说明</button>
+      <view class="hero-actions">
+        <button class="about" bindtap="openOnsite">场内溢价 ›</button>
+        <button class="about" bindtap="openAbout">说明</button>
+      </view>
     </view>
     <view class="title">纳指 QDII 额度监控</view>
     <view class="subtitle">每条结果都绑定基金份额、销售入口、证据来源和可靠性等级</view>

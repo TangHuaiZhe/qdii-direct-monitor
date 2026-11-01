@@ -178,6 +178,10 @@ export interface Snapshot {
   feesByFund?: Record<string, FeeObservation>;
   holdings?: HoldingObservation[];
   holdingsByFund?: Record<string, HoldingObservation>;
+  quotes?: QuoteObservation[];
+  quotesByCode?: Record<string, QuoteObservation>;
+  /** Recent trading-day closes per fund code: { "2026-10-30": { "513100": 2.239 } }. Used to compute calibrated (same-valuation-date) premium. */
+  closeByDate?: Record<string, Record<string, number>>;
 }
 
 export interface SnapshotChange {
@@ -221,9 +225,99 @@ export interface PortfolioPlan {
 
 export interface MonitorConfig {
   funds: Fund[];
+  onsiteFunds?: OnsiteFund[];
+  onsite?: OnsiteSettings;
   outputDir?: string;
   historyLimit?: number;
   fetch?: { timeoutMs?: number; concurrency?: number; feeConcurrency?: number; holdingsConcurrency?: number };
   portfolioMappings?: Record<string, PortfolioPlan>;
   notifications?: Record<string, unknown>;
+}
+
+export type ExchangeId = "SSE" | "SZSE";
+export type VehicleType = "ETF" | "LOF";
+export type RefNavKind = "iopv" | "reference-nav" | "previous-nav" | "nav";
+
+export interface OnsiteFund {
+  code: string;
+  name: string;
+  manager: string;
+  exchange: ExchangeId;
+  vehicle: VehicleType;
+  index: string;
+  strategy?: FundStrategy;
+  currency?: string;
+  shareClass?: string;
+  /** Existing OTC share class code in `funds` that links to this on-exchange listing. */
+  linkFundCode?: string | null;
+  officialQuoteUrl?: string;
+  enabled?: boolean;
+}
+
+export interface OnsiteSettings {
+  enabled?: boolean;
+  highPremiumPct?: number;
+  minTurnoverCny?: number;
+  navMismatchPct?: number;
+  maxNavLagTradingDays?: number;
+  concurrency?: number;
+  sources?: { exchangeOfficial?: boolean; eastmoney?: boolean };
+}
+
+/**
+ * One on-exchange quote for one fund listing. This is deliberately NOT an `Observation`:
+ * `rows` describe one share class x one sales entry (purchase limit), while a quote describes
+ * a price/NAV pair. Keeping them separate preserves the dashboard's existing semantics.
+ */
+export interface QuoteObservation {
+  code: string;
+  name: string;
+  manager: string;
+  index: string;
+  exchange: ExchangeId;
+  vehicle: VehicleType;
+  currency: string;
+  price: number | null;
+  priceAt: string | null;
+  priceDate: string | null;
+  /** Source that produced `price`: official exchange feed or the Eastmoney public fallback. */
+  priceSource?: "official" | "eastmoney" | null;
+  refNav: number | null;
+  refNavKind: RefNavKind | null;
+  refNavDate: string | null;
+  nav: number | null;
+  navDate: string | null;
+  premiumLivePct: number | null;
+  premiumLiveBasis: RefNavKind | null;
+  premiumCalibratedPct: number | null;
+  calibratedForDate: string | null;
+  turnoverCny: number | null;
+  applyStatus: string | null;
+  linksOtcCode: string | null;
+  reliability: Reliability;
+  sources: EvidenceSource[];
+  observedAt: string;
+  notes: string[];
+  carriedForward?: boolean;
+}
+
+export interface PremiumSummary {
+  asOf: string;
+  calibratedForDate: string | null;
+  count: number;
+  degraded: number;
+  highPremiumCodes: string[];
+  thresholds: {
+    highPremiumPct: number;
+    p25: number | null;
+    p75: number | null;
+    p90: number | null;
+  };
+}
+
+export interface ExchangeHealth {
+  officialOk: number;
+  fallback: number;
+  failed: number;
+  degradedCodes: string[];
 }

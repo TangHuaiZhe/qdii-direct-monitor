@@ -1,0 +1,48 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state">正在读取场内基金详情…</view>
+  <view wx:elif="{{error}}" class="state error">{{error}}</view>
+  <block wx:else>
+    <view class="hero">
+      <text class="code">{{quote.code}}</text>
+      <view class="name">{{quote.name}}</view>
+      <view class="meta">{{quote.manager}} · 场内 {{quote.vehicleLabel}} · {{quote.exchangeLabel}} · {{quote.indexLabel}} · 抓取时间 {{quote.observedAtLabel}}</view>
+      <view class="hero-metrics">
+        <view><text class="hero-value premium-{{quote.calibratedBand}}">{{quote.calibratedLabel}}</text><text>校准溢价 · {{quote.calibratedDateLabel}}</text></view>
+        <view><text class="hero-value premium-{{quote.liveBand}}">{{quote.liveLabel}}</text><text>实时溢价 · 含美股时差</text></view>
+        <view><text class="hero-value">{{quote.priceLabel}}</text><text>收盘价</text></view>
+        <view><text class="hero-value">{{quote.refNavLabel}}</text><text>{{quote.refNavKindLabel}}</text></view>
+        <view><text class="hero-value">{{quote.turnoverLabel}}</text><text>成交额</text></view>
+        <view><text class="hero-value">{{quote.grade}} 级</text><text>可靠性</text></view>
+      </view>
+      <view wx:if="{{quote.carriedForward}}" class="carry">沿用上次可信值 · {{quote.originalTimeLabel}}，不代表最新行情</view>
+    </view>
+
+    <view wx:if="{{!quote.trusted}}" class="degraded">D 级 · {{quote.reliabilityReason}}。页面保留来源用于核验，不展示未经核验的溢价数值。</view>
+
+    <view class="card">
+      <view class="section-title">口径说明</view>
+      <view class="hint">校准溢价：同一估值日收盘价 ÷ 当日单位净值 − 1，净值公布后计算，通常滞后 1–2 个交易日，是本页主指标。</view>
+      <view class="hint">实时溢价：现价 ÷ 最新公布参考净值 − 1，QDII 净值含美股时差，偏大或偏小都正常，不代表真实溢价，也不代表可以套利。</view>
+      <view class="fact-line">净值日期 {{quote.navDateLabel}} · 申购状态 {{quote.applyStatus || '未提供'}}</view>
+    </view>
+
+    <view class="card">
+      <view class="section-title">来源与证据</view>
+      <view wx:for="{{quote.sources}}" wx:key="url" class="source-row">
+        <view class="source-kind">{{item.kindLabel}}<text wx:if="{{item.adapter}}"> · {{item.adapter}}</text></view>
+        <button class="source" data-url="{{item.url}}" bindtap="copySource">复制来源链接 · {{item.host}}</button>
+      </view>
+      <view wx:if="{{!quote.sources.length}}" class="hint">本次没有可公开展示的来源链接，请以交易所与基金公司公开页面为准。</view>
+    </view>
+
+    <view class="card">
+      <view class="section-title">关联场外份额</view>
+      <button wx:if="{{quote.linksOtcCode}}" class="source" bindtap="openOtc">查看场外份额 {{quote.linksOtcCode}} 的申购额度 ›</button>
+      <view wx:else class="hint">暂未配置对应的场外份额。</view>
+      <view class="hint">场外申购额度与场内溢价是两套指标，分开展示，不相加、不互相推断。</view>
+    </view>
+
+    <view class="disclaimer">历史溢价不代表未来，溢价率高时买入存在价格回归风险；交易所公开行情与公开净值不等于登录后下单验证。数据仅供核验，不构成投资建议。</view>
+  </block>
+  <view class="safe-bottom"></view>
+</view>

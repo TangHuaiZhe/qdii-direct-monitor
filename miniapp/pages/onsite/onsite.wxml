@@ -1,0 +1,107 @@
+<view class="page">
+  <view class="hero">
+    <view class="hero-top">
+      <text class="eyebrow">场内份额 · 双口径</text>
+      <text class="hero-note">数据时间 {{observedAt || '读取中…'}}</text>
+    </view>
+    <view class="title">场内折溢价</view>
+    <view class="subtitle">校准溢价 = 同日收盘价 ÷ 同日单位净值 − 1；实时溢价含美股时差，不代表套利空间。场外额度与场内溢价分开展示，不相加。</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">
+    <view class="loading-dot"></view>
+    <text>正在读取最新公开数据</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="state-card error-card">
+    <text class="state-title">暂时无法获取数据</text>
+    <text class="state-copy">{{error}}</text>
+    <button class="retry" bindtap="retry">重新加载</button>
+  </view>
+
+  <block wx:else>
+    <view class="meta-line">校准日 {{summary.calibratedForDateLabel}} · 抓取时间 {{summary.asOfLabel}}</view>
+
+    <view wx:if="{{hasData}}" class="stats">
+      <view class="stat">
+        <text class="stat-value">{{summary.highestLabel}}</text>
+        <text>最高校准溢价</text>
+        <text class="stat-note">{{summary.highestNote}}</text>
+      </view>
+      <view class="stat">
+        <text class="stat-value">{{summary.medianLabel}}</text>
+        <text>校准溢价中位数</text>
+        <text class="stat-note">基于 {{summary.calibratedCount}} 只有效校准</text>
+      </view>
+      <view class="stat">
+        <text class="stat-value">{{summary.highCount}}</text>
+        <text>高溢价只数（≥ {{summary.highPremiumPct}}%）</text>
+        <text class="stat-note">共 {{summary.count}} 只</text>
+      </view>
+    </view>
+
+    <view wx:if="{{summary.healthLabel}}" class="health">{{summary.healthLabel}}</view>
+
+    <view wx:if="{{!hasData}}" class="state-card">
+      <text class="state-title">暂无可信场内数据</text>
+      <text class="state-copy">本次抓取没有可核验的场内行情或净值，不回退显示历史值。下拉可重试。</text>
+    </view>
+
+    <block wx:else>
+      <view class="filters">
+        <view class="search-wrap">
+          <text class="search-icon">⌕</text>
+          <input class="search" placeholder="搜索名称、代码或指数" value="{{query}}" bindinput="onSearch" confirm-type="search" />
+        </view>
+        <scroll-view class="chips" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="chip-row">
+            <button wx:for="{{indexOptions}}" wx:key="*this" class="chip {{indexFilter === item ? 'active' : ''}}" data-value="{{item}}" bindtap="onIndex">{{item === '全部' ? '全部' : (item === 'nasdaq100' ? '纳指100' : (item === 'sp500' ? '标普500' : item))}}</button>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view class="result-head"><text>场内基金</text><text>{{visibleQuotes.length}} 只</text></view>
+      <view wx:if="{{!visibleQuotes.length}}" class="empty">没有符合当前条件的场内基金</view>
+
+      <view wx:for="{{visibleQuotes}}" wx:key="code" class="onsite-card" data-code="{{item.code}}" bindtap="openDetail" hover-class="onsite-card-hover">
+        <view class="card-head">
+          <view class="identity">
+            <text class="index-chip">{{item.indexLabel}}</text>
+            <view class="identity-body">
+              <view class="fund-name">{{item.name}}</view>
+              <view class="fund-meta">{{item.code}} · {{item.manager}} · 场内 {{item.vehicleLabel}} · {{item.exchangeLabel}}</view>
+            </view>
+          </view>
+          <text class="grade {{item.gradeClass}}">{{item.grade}} 级</text>
+        </view>
+
+        <view class="premium-row">
+          <view class="premium-block">
+            <text class="premium-label">校准溢价</text>
+            <text class="premium-value premium-{{item.calibratedBand}}">{{item.calibratedLabel}}</text>
+            <text class="premium-note">{{item.calibratedDateLabel}}</text>
+          </view>
+          <view class="premium-block">
+            <text class="premium-label">实时溢价</text>
+            <text class="premium-value premium-{{item.liveBand}}">{{item.liveLabel}}</text>
+            <text class="premium-note">净值日期 {{item.navDateLabel}} · 含美股时差</text>
+          </view>
+        </view>
+
+        <view wx:if="{{item.carriedForward}}" class="carry">沿用上次可信值 · {{item.originalTimeLabel}}</view>
+
+        <view class="metrics">
+          <view class="metric"><text>收盘价</text><text class="metric-value">{{item.priceLabel}}</text></view>
+          <view class="metric"><text>参考净值</text><text class="metric-value">{{item.refNavLabel}}</text><text class="metric-note">{{item.refNavKindLabel}}</text></view>
+          <view class="metric"><text>成交额</text><text class="metric-value">{{item.turnoverLabel}}</text></view>
+        </view>
+
+        <view wx:if="{{!item.trusted}}" class="degraded">{{item.reliabilityReason}}</view>
+        <view class="card-foot">查看详情与来源 <text>›</text></view>
+      </view>
+    </block>
+
+    <view class="disclaimer">校准溢价是主指标，实时溢价只作参考；两者都不是套利收益，也不构成投资建议。交易所公开行情与公开净值不等于登录后下单验证。</view>
+  </block>
+  <view class="safe-bottom"></view>
+</view>

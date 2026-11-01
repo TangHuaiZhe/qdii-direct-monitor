@@ -101,6 +101,10 @@ Page({
     wx.navigateTo({ url: "/pages/about/about" });
   },
 
+  openOnsite() {
+    wx.navigateTo({ url: "/pages/onsite/onsite" });
+  },
+
   retry() {
     this.refresh(true);
   },

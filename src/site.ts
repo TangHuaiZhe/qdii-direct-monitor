@@ -2,7 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { renderFundHtml } = require("./report");
+const { renderFundHtml, renderOnsiteFundHtml } = require("./report");
 
 const SITE_URL = "https://tanghuaizhe.github.io/qdii-direct-monitor/";
 
@@ -45,10 +45,41 @@ function buildSite(options: any = {}) {
     fs.writeFileSync(detailPath, html, "utf8");
   }
 
+  const onsiteWarnings: string[] = [];
+  const quoteCodeSet = new Set<string>();
+  const quoteList: any[] = Array.isArray(payload.quotes) ? payload.quotes : [];
+  for (const quote of quoteList) {
+    const code = String(quote?.code || "");
+    if (/^\d{6}$/.test(code)) quoteCodeSet.add(code);
+  }
+  const quoteCodes = [...quoteCodeSet].sort();
+  const onsiteCodes: string[] = [];
+  for (const code of quoteCodes) {
+    let html: string | null = null;
+    try {
+      html = renderOnsiteFundHtml(payload, code, SITE_URL);
+    } catch (error: any) {
+      onsiteWarnings.push(`onsite/${code}: ${error?.message || "renderer failed"}`);
+      continue;
+    }
+    if (!html) {
+      onsiteWarnings.push(`onsite/${code}: renderer returned no page, skipped`);
+      continue;
+    }
+    const detailPath = path.join(siteDir, "onsite", code, "index.html");
+    fs.mkdirSync(path.dirname(detailPath), { recursive: true });
+    fs.writeFileSync(detailPath, html, "utf8");
+    onsiteCodes.push(code);
+  }
+
   const lastmod = payload.observedAt
     ? new Date(payload.observedAt).toISOString().slice(0, 10)
     : new Date().toISOString().slice(0, 10);
-  const urls = [SITE_URL, ...fundCodes.map((code) => SITE_URL + "funds/" + code + "/")];
+  const urls = [
+    SITE_URL,
+    ...fundCodes.map((code) => SITE_URL + "funds/" + code + "/"),
+    ...onsiteCodes.map((code) => SITE_URL + "onsite/" + code + "/")
+  ];
   fs.writeFileSync(
     path.join(siteDir, "robots.txt"),
     "User-agent: *\nAllow: /\n\nSitemap: " + SITE_URL + "sitemap.xml\n",
@@ -72,8 +103,10 @@ function buildSite(options: any = {}) {
       ".nojekyll",
       "robots.txt",
       "sitemap.xml",
-      ...fundCodes.map((code) => "funds/" + code + "/index.html")
-    ]
+      ...fundCodes.map((code) => "funds/" + code + "/index.html"),
+      ...onsiteCodes.map((code) => "onsite/" + code + "/index.html")
+    ],
+    warnings: onsiteWarnings
   };
 }
 

@@ -1,6 +1,6 @@
 "use strict";
 
-import type { CollectorContext, FeeObservation, Fund, HoldingObservation, MonitorConfig, Observation, ObservationInput, PortfolioPlan, Snapshot } from "./types";
+import type { CollectorContext, FeeObservation, Fund, HoldingObservation, MonitorConfig, Observation, ObservationInput, PortfolioPlan, QuoteObservation, Snapshot } from "./types";
 
 const path = require("node:path");
 const { adapters: untypedAdapters } = require("./adapters");
@@ -11,6 +11,8 @@ const { DEFAULT_TIMEOUT_MS, fetchResource } = require("./http");
 const { buildSnapshot, compareSnapshots, normalizeObservation } = require("./model") as typeof import("./model");
 const { notify } = require("./notify");
 const { emptyNoticeHealth } = require("./notice-events");
+const { collectOnsiteQuotes } = require("./onsite/collect");
+const { summarizeQuotes } = require("./onsite/premium");
 const { readJson, saveRun } = require("./store");
 
 const GRADE = { A: 4, B: 3, C: 2, D: 1 };
@@ -50,8 +52,16 @@ function noticePageUrls(funds: Fund[]): Record<string, string> {
   return pages;
 }
 
-function stableSnapshot(observedAt: string, rows: Observation[], before: Snapshot | null, fees: FeeObservation[] = [], holdings: HoldingObservation[] = []): Snapshot {
-  const fresh = buildSnapshot(observedAt, rows, fees, holdings);
+function stableSnapshot(
+  observedAt: string,
+  rows: Observation[],
+  before: Snapshot | null,
+  fees: FeeObservation[] = [],
+  holdings: HoldingObservation[] = [],
+  quotes: QuoteObservation[] = [],
+  closeByDate: Record<string, Record<string, number>> = {}
+): Snapshot {
+  const fresh = buildSnapshot(observedAt, rows, fees, holdings, quotes, closeByDate);
   if (!before?.byKey) return fresh;
   const stableRows = fresh.rows.map((row) => {
     const prior = before.byKey[row.key];
@@ -65,7 +75,21 @@ function stableSnapshot(observedAt: string, rows: Observation[], before: Snapsho
     const prior = before.holdingsByFund?.[item.fundCode];
     return item.reliability?.grade === "D" && prior && prior.reliability?.grade !== "D" ? prior : item;
   });
-  return buildSnapshot(observedAt, stableRows, stableFees, stableHoldings);
+  // A failed on-exchange fetch must not overwrite the last trusted A-C quote: keep the
+  // prior value, mark it carriedForward and keep its original observedAt so the payload
+  // never passes an old number off as a current one.
+  const stableQuotes = quotes.map((quote) => {
+    const prior = before.quotesByCode?.[quote.code];
+    if (quote.reliability?.grade === "D" && prior && prior.reliability?.grade !== "D") {
+      return {
+        ...prior,
+        carriedForward: true,
+        notes: [...(prior.notes || []), "Onsite data fetch failed this run; carried forward the last trusted value."]
+      };
+    }
+    return quote;
+  });
+  return buildSnapshot(observedAt, stableRows, stableFees, stableHoldings, stableQuotes, closeByDate);
 }
 
 async function mapLimit<T, R>(items: T[], concurrency: number, iterator: (item: T, index: number) => Promise<R> | R): Promise<R[]> {
@@ -142,11 +166,56 @@ async function run(config: MonitorConfig, options: { observedAt?: string; fetchR
       source: null, reliability: { grade: "D", reason: "holdings source is not configured" } };
   }).sort((a, b) => a.fundCode.localeCompare(b.fundCode));
   const before = readJson(path.join(outputDir, "state.json"), null) as Snapshot | null;
-  const snapshot = stableSnapshot(observedAt, rows, before, fetchedFees, fetchedHoldings);
+  const onsiteFunds = (config.onsiteFunds || []).filter((fund) => fund.enabled !== false);
+  const onsiteEnabled = config.onsite?.enabled !== false && onsiteFunds.length > 0;
+  let onsite: Awaited<ReturnType<typeof collectOnsiteQuotes>> | null = null;
+  if (onsiteEnabled) {
+    try {
+      onsite = await collectOnsiteQuotes(onsiteFunds, config.onsite || {}, context, before?.closeByDate || {});
+    } catch (error) {
+      // On-exchange collection must never block the direct/agency quota part of the run.
+      warnings.push(`onsite quotes: ${error.message}`);
+    }
+  }
+  let fetchedQuotes: QuoteObservation[] = onsite?.quotes || [];
+  let closeByDate = onsite?.closeByDate || before?.closeByDate || {};
+  if (onsiteEnabled && !onsite && before?.quotes?.length) {
+    fetchedQuotes = before.quotes.map((quote) => ({
+      ...quote,
+      carriedForward: true,
+      notes: [...(quote.notes || []), "Onsite collection failed this run; carried forward the last trusted value."]
+    }));
+    warnings.push(`onsite collection failed; carried forward ${fetchedQuotes.length} last trusted quote(s)`);
+  }
+  const snapshot = stableSnapshot(observedAt, rows, before, fetchedFees, fetchedHoldings, fetchedQuotes, closeByDate);
   const fees = snapshot.fees || fetchedFees;
   const holdings = snapshot.holdings || fetchedHoldings;
+  const quotes = snapshot.quotes || [];
+  const finalCloseByDate = snapshot.closeByDate || closeByDate;
+  const premiumSummary = summarizeQuotes(quotes, config.onsite || {}, observedAt);
+  const exchangeHealth = onsite?.health || { officialOk: 0, fallback: 0, failed: 0, degradedCodes: [] };
   const changes = compareSnapshots(before, snapshot);
-  const payload: any = { schemaVersion: 3, observedAt, rows, fees, holdings, changes, warnings, noticePages: noticePageUrls(enabledFunds), health: { status: rows.some((r) => r.reliability.grade !== "D") ? "ok" : "degraded" }, noticeHealth, snapshot };
+  const payload: any = {
+    schemaVersion: 4,
+    observedAt,
+    rows,
+    fees,
+    holdings,
+    quotes,
+    quotesByCode: snapshot.quotesByCode || Object.fromEntries(quotes.map((quote) => [quote.code, quote])),
+    premiumSummary,
+    closeByDate: finalCloseByDate,
+    changes,
+    warnings,
+    noticePages: noticePageUrls(enabledFunds),
+    health: {
+      status: rows.some((r) => r.reliability.grade !== "D") && noticeHealth.staleTimelines === 0 ? "ok" : "degraded",
+      staleNoticeTimelines: noticeHealth.staleTimelines,
+      exchange: exchangeHealth
+    },
+    noticeHealth,
+    snapshot
+  };
   const held = rows.filter((row) => {
     const prior = before?.byKey?.[row.key];
     return row.reliability.grade === "D" && prior && prior.reliability?.grade !== "D";
@@ -156,6 +225,8 @@ async function run(config: MonitorConfig, options: { observedAt?: string; fetchR
   if (heldFees) warnings.push(`${heldFees} degraded fee record(s) reused the last trusted fee snapshot`);
   const heldHoldings = fetchedHoldings.filter((item) => item.reliability?.grade === "D" && before?.holdingsByFund?.[item.fundCode]?.reliability?.grade !== "D").length;
   if (heldHoldings) warnings.push(`${heldHoldings} degraded holdings record(s) reused the last trusted holdings snapshot`);
+  const carriedQuotes = (snapshot.quotes || []).filter((quote) => quote.carriedForward === true).length;
+  if (carriedQuotes) warnings.push(`${carriedQuotes} onsite quote(s) failed this run and the last trusted values were carried forward`);
   try { payload.notification = await notify(payload, config.notifications || {}); }
   catch (error) { payload.notification = { sent: false, reason: "webhook-error", message: error.message }; warnings.push(`notification failed: ${error.message}`); }
   if (options.save !== false) saveRun(outputDir, payload, config.historyLimit || 180);

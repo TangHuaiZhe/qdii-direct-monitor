@@ -1,12 +1,16 @@
 "use strict";
 
-import type { Channel, FeeObservation, FundStatus, HoldingObservation, Observation, ObservationInput, ReliabilityGrade, Snapshot, SnapshotChange } from "./types";
+import type { Channel, FeeObservation, FundStatus, HoldingObservation, Observation, ObservationInput, QuoteObservation, RefNavKind, ReliabilityGrade, Snapshot, SnapshotChange } from "./types";
 
 const STATUS = new Set<FundStatus>(["open", "limited", "suspended", "unavailable", "unknown"]);
 const DIRECT_ACCESS = new Set(["web", "app", "counter", "all"]);
 const AGENCY_ACCESS = new Set(["eastmoney", "alipay", "bank", "broker", "all"]);
 const GRADES = new Set<ReliabilityGrade>(["A", "B", "C", "D"]);
 const STRATEGIES = new Set(["active", "passive", "unknown"]);
+const EXCHANGES = new Set(["SSE", "SZSE"]);
+const VEHICLES = new Set(["ETF", "LOF"]);
+const REF_NAV_KINDS = new Set<RefNavKind>(["iopv", "reference-nav", "previous-nav", "nav"]);
+const PRICE_SOURCES = new Set(["official", "eastmoney"]);
 
 function channelKey(channel: Channel) {
   return `${channel.kind}/${channel.access}${channel.name ? `/${channel.name}` : ""}`;
@@ -42,15 +46,84 @@ function normalizeObservation(input: unknown): Observation {
   return row;
 }
 
-function buildSnapshot(observedAt: string, rows: unknown[], fees: FeeObservation[] = [], holdings: HoldingObservation[] = []): Snapshot {
-  const normalized = rows.map(normalizeObservation);
+function optionalNumber(value: unknown, field: string): number | null {
+  if (value == null) return null;
+  if (typeof value !== "number" || !Number.isFinite(value)) throw new Error(`invalid quote ${field}`);
+  return value;
+}
+
+function normalizeQuote(input: unknown): QuoteObservation {
+  if (!input || typeof input !== "object") throw new Error("quote must be an object");
+  const candidate = input as Partial<QuoteObservation>;
+  if (!/^\d{6}$/.test(String(candidate.code || ""))) throw new Error("invalid quote code");
+  if (!EXCHANGES.has(String(candidate.exchange))) throw new Error(`invalid quote exchange: ${candidate.exchange}`);
+  if (!VEHICLES.has(String(candidate.vehicle))) throw new Error(`invalid quote vehicle: ${candidate.vehicle}`);
+  if (!candidate.reliability || !GRADES.has(candidate.reliability.grade)) throw new Error("invalid quote reliability grade");
+  const price = optionalNumber(candidate.price, "price");
+  if (price != null && price <= 0) throw new Error("invalid quote price");
+  const refNav = optionalNumber(candidate.refNav, "refNav");
+  if (refNav != null && refNav <= 0) throw new Error("invalid quote refNav");
+  const nav = optionalNumber(candidate.nav, "nav");
+  if (nav != null && nav <= 0) throw new Error("invalid quote nav");
+  const turnoverCny = optionalNumber(candidate.turnoverCny, "turnoverCny");
+  if (turnoverCny != null && turnoverCny < 0) throw new Error("invalid quote turnoverCny");
+  const premiumLivePct = optionalNumber(candidate.premiumLivePct, "premiumLivePct");
+  const premiumCalibratedPct = optionalNumber(candidate.premiumCalibratedPct, "premiumCalibratedPct");
+  if (candidate.refNavKind != null && !REF_NAV_KINDS.has(candidate.refNavKind)) throw new Error(`invalid quote refNavKind: ${candidate.refNavKind}`);
+  if (candidate.premiumLiveBasis != null && !REF_NAV_KINDS.has(candidate.premiumLiveBasis)) throw new Error(`invalid quote premiumLiveBasis: ${candidate.premiumLiveBasis}`);
+  if (candidate.priceSource != null && !PRICE_SOURCES.has(candidate.priceSource)) throw new Error(`invalid quote priceSource: ${candidate.priceSource}`);
   return {
-    schemaVersion: holdings.length ? 3 : (fees.length ? 2 : 1),
+    code: String(candidate.code),
+    name: String(candidate.name || ""),
+    manager: String(candidate.manager || ""),
+    index: String(candidate.index || ""),
+    exchange: candidate.exchange as QuoteObservation["exchange"],
+    vehicle: candidate.vehicle as QuoteObservation["vehicle"],
+    currency: String(candidate.currency || "CNY"),
+    price,
+    priceAt: candidate.priceAt || null,
+    priceDate: candidate.priceDate || null,
+    priceSource: candidate.priceSource || null,
+    refNav,
+    refNavKind: candidate.refNavKind || null,
+    refNavDate: candidate.refNavDate || null,
+    nav,
+    navDate: candidate.navDate || null,
+    premiumLivePct,
+    premiumLiveBasis: candidate.premiumLiveBasis || null,
+    premiumCalibratedPct,
+    calibratedForDate: candidate.calibratedForDate || null,
+    turnoverCny,
+    applyStatus: candidate.applyStatus || null,
+    linksOtcCode: candidate.linksOtcCode || null,
+    reliability: candidate.reliability,
+    sources: Array.isArray(candidate.sources) ? candidate.sources : [],
+    observedAt: candidate.observedAt || new Date().toISOString(),
+    notes: Array.isArray(candidate.notes) ? candidate.notes : [],
+    carriedForward: candidate.carriedForward === true
+  };
+}
+
+function buildSnapshot(
+  observedAt: string,
+  rows: unknown[],
+  fees: FeeObservation[] = [],
+  holdings: HoldingObservation[] = [],
+  quotes: unknown[] = [],
+  closeByDate: Record<string, Record<string, number>> = {}
+): Snapshot {
+  const normalized = rows.map(normalizeObservation);
+  const normalizedQuotes = quotes.map(normalizeQuote);
+  const hasCloses = Object.keys(closeByDate || {}).length > 0;
+  return {
+    schemaVersion: normalizedQuotes.length ? 4 : (holdings.length ? 3 : (fees.length ? 2 : 1)),
     observedAt,
     rows: normalized,
     byKey: Object.fromEntries(normalized.map((r) => [r.key, r])),
     ...(fees.length ? { fees, feesByFund: Object.fromEntries(fees.map((fee) => [fee.fundCode, fee])) } : {}),
-    ...(holdings.length ? { holdings, holdingsByFund: Object.fromEntries(holdings.map((item) => [item.fundCode, item])) } : {})
+    ...(holdings.length ? { holdings, holdingsByFund: Object.fromEntries(holdings.map((item) => [item.fundCode, item])) } : {}),
+    ...(normalizedQuotes.length ? { quotes: normalizedQuotes, quotesByCode: Object.fromEntries(normalizedQuotes.map((quote) => [quote.code, quote])) } : {}),
+    ...(hasCloses ? { closeByDate } : {})
   };
 }
 
@@ -73,4 +146,4 @@ function compareSnapshots(before: Snapshot | null, after: Snapshot): SnapshotCha
   return changes.sort((a, b) => a.key.localeCompare(b.key));
 }
 
-export { buildSnapshot, channelKey, compareSnapshots, normalizeObservation, observationKey };
+export { buildSnapshot, channelKey, compareSnapshots, normalizeObservation, normalizeQuote, observationKey };

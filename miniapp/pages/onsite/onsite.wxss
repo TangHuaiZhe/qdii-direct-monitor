@@ -1,0 +1,64 @@
+.page { padding: 20rpx 20rpx 0; }
+.hero { padding: 34rpx 30rpx 30rpx; border-radius: 32rpx; color: #fff; background: linear-gradient(135deg, #143d2c, #1d6747 72%, #2d7957); box-shadow: 0 18rpx 50rpx rgba(21, 59, 41, .13); }
+.hero-top { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
+.eyebrow { padding: 8rpx 16rpx; border: 1rpx solid rgba(255,255,255,.2); border-radius: 999rpx; background: rgba(255,255,255,.09); font-size: 22rpx; }
+.hero-note { color: rgba(255,255,255,.68); font-size: 20rpx; }
+.title { margin-top: 24rpx; font-size: 48rpx; line-height: 1.15; font-weight: 800; letter-spacing: -2rpx; }
+.subtitle { margin-top: 14rpx; color: #dceddf; line-height: 1.55; font-size: 24rpx; }
+.meta-line { margin: 20rpx 4rpx 0; color: #68736b; font-size: 21rpx; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16rpx; margin: 20rpx 0; }
+.stat { display: flex; flex-direction: column; padding: 24rpx; border: 1rpx solid #e1e7e2; border-radius: 24rpx; background: #fff; color: #68736b; font-size: 22rpx; }
+.stat:first-child { grid-column: 1 / -1; }
+.stat-value { margin-bottom: 4rpx; color: #19221d; font-size: 42rpx; line-height: 1; font-weight: 800; }
+.stat-note { margin-top: 6rpx; color: #7a857e; font-size: 19rpx; line-height: 1.4; }
+.health { margin-bottom: 16rpx; padding: 18rpx 22rpx; border: 1rpx solid #efdfb7; border-radius: 20rpx; background: #fff9ea; color: #71571c; font-size: 21rpx; line-height: 1.5; }
+.filters { padding: 22rpx; border: 1rpx solid #e1e7e2; border-radius: 26rpx; background: #fff; }
+.search-wrap { display: flex; align-items: center; height: 76rpx; border: 1rpx solid #dce3dd; border-radius: 18rpx; background: #fafcfb; }
+.search-icon { margin: 0 14rpx 0 20rpx; color: #7a857e; font-size: 36rpx; }
+.search { flex: 1; height: 76rpx; font-size: 26rpx; }
+.chips { width: 100%; margin-top: 18rpx; white-space: nowrap; }
+.chip-row { display: inline-flex; gap: 12rpx; }
+.chip { margin: 0; padding: 0 28rpx; min-width: auto; height: 60rpx; line-height: 60rpx; border: 1rpx solid #dce3dd; border-radius: 999rpx; background: #fff; color: #455048; font-size: 24rpx; }
+.chip.active { border-color: #19221d; background: #19221d; color: #fff; }
+.result-head { display: flex; justify-content: space-between; padding: 28rpx 6rpx 14rpx; color: #68736b; font-size: 23rpx; font-weight: 600; }
+.empty { margin-top: 6rpx; padding: 60rpx 30rpx; border: 1rpx solid #e1e7e2; border-radius: 26rpx; background: #fff; color: #68736b; text-align: center; }
+.onsite-card { margin-bottom: 18rpx; padding: 25rpx 24rpx 20rpx; border: 1rpx solid #e1e7e2; border-radius: 26rpx; background: #fff; box-shadow: 0 8rpx 28rpx rgba(38,56,43,.035); }
+.onsite-card-hover { background: #f9fcfa; }
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16rpx; }
+.identity { display: flex; min-width: 0; gap: 16rpx; }
+.index-chip { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; min-width: 86rpx; height: 64rpx; padding: 0 10rpx; border-radius: 18rpx; background: #e8f3ed; color: #137552; font-size: 19rpx; font-weight: 900; }
+.identity-body { min-width: 0; }
+.fund-name { display: -webkit-box; overflow: hidden; color: #19221d; font-size: 27rpx; line-height: 1.35; font-weight: 750; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.fund-meta { margin-top: 7rpx; color: #79837c; font-size: 20rpx; }
+.grade { flex: 0 0 auto; padding: 4rpx 12rpx; border-radius: 999rpx; font-size: 19rpx; font-weight: 750; }
+.grade-A { background: #e5f5ed; color: #137552; }
+.grade-B { background: #eaf2fb; color: #2b66a0; }
+.grade-C { background: #fff3d6; color: #9b6400; }
+.grade-D { background: #edf0ed; color: #667068; }
+.premium-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12rpx; margin: 22rpx 0 16rpx; padding: 20rpx; border-radius: 20rpx; background: #f5faf7; }
+.premium-block { display: flex; flex-direction: column; min-width: 0; }
+.premium-label { color: #68736b; font-size: 20rpx; }
+.premium-value { margin: 4rpx 0 3rpx; font-size: 40rpx; line-height: 1.1; font-weight: 850; font-variant-numeric: tabular-nums; }
+.premium-note { color: #7a857e; font-size: 18rpx; line-height: 1.4; }
+.premium-high { color: #aa3838; }
+.premium-elevated { color: #9b6400; }
+.premium-normal { color: #19221d; }
+.premium-discount { color: #137552; }
+.premium-unknown { color: #68736b; font-size: 30rpx; }
+.carry { margin-bottom: 14rpx; padding: 12rpx 16rpx; border: 1rpx dashed #c3cbc5; border-radius: 14rpx; color: #52605a; font-size: 19rpx; }
+.metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8rpx; }
+.metric { display: flex; flex-direction: column; min-width: 0; padding: 12rpx; border-right: 1rpx solid #edf0ed; color: #7b857e; font-size: 19rpx; }
+.metric:last-child { border-right: 0; }
+.metric-value { overflow: hidden; margin: 5rpx 0 2rpx; color: #27322b; font-size: 25rpx; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.metric-note { color: #7a857e; font-size: 18rpx; }
+.degraded { margin-top: 14rpx; padding: 12rpx 16rpx; border-radius: 14rpx; background: #fdeaea; color: #8c3535; font-size: 19rpx; line-height: 1.5; }
+.card-foot { margin-top: 18rpx; padding-top: 16rpx; border-top: 1rpx solid #edf0ed; color: #527060; font-size: 21rpx; text-align: right; }
+.card-foot text { margin-left: 5rpx; font-size: 27rpx; }
+.state-card { margin-top: 20rpx; padding: 70rpx 30rpx; border: 1rpx solid #e1e7e2; border-radius: 26rpx; background: #fff; color: #68736b; text-align: center; }
+.loading-dot { width: 20rpx; height: 20rpx; margin: 0 auto 18rpx; border-radius: 50%; background: #137552; animation: pulse 1.2s ease-in-out infinite; }
+.state-title, .state-copy { display: block; }
+.state-title { color: #28332c; font-weight: 700; }
+.state-copy { margin-top: 10rpx; font-size: 23rpx; line-height: 1.5; }
+.retry { width: 220rpx; margin-top: 24rpx; border-radius: 999rpx; background: #137552; color: #fff; font-size: 25rpx; }
+.disclaimer { padding: 20rpx 14rpx 10rpx; color: #7a857e; font-size: 21rpx; line-height: 1.6; text-align: center; }
+@keyframes pulse { 0%,100% { opacity: .35; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }

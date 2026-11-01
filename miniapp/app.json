@@ -1,6 +1,8 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/onsite/onsite",
+    "pages/onsite-detail/onsite-detail",
     "pages/detail/detail",
     "pages/about/about"
   ],
