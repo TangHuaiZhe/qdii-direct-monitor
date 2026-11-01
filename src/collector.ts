@@ -41,6 +41,15 @@ function preferEvidence(rows: unknown[]): Observation[] {
   return [...selected.values()].sort((a, b) => a.key.localeCompare(b.key));
 }
 
+function noticePageUrls(funds: Fund[]): Record<string, string> {
+  const pages: Record<string, string> = {};
+  for (const fund of funds) {
+    const source = (fund.officialSources || []).find((item) => item.kind === "notice-index" && item.url);
+    if (source?.url) pages[fund.code] = source.url;
+  }
+  return pages;
+}
+
 function stableSnapshot(observedAt: string, rows: Observation[], before: Snapshot | null, fees: FeeObservation[] = [], holdings: HoldingObservation[] = []): Snapshot {
   const fresh = buildSnapshot(observedAt, rows, fees, holdings);
   if (!before?.byKey) return fresh;
@@ -137,7 +146,7 @@ async function run(config: MonitorConfig, options: { observedAt?: string; fetchR
   const fees = snapshot.fees || fetchedFees;
   const holdings = snapshot.holdings || fetchedHoldings;
   const changes = compareSnapshots(before, snapshot);
-  const payload: any = { schemaVersion: 3, observedAt, rows, fees, holdings, changes, warnings, health: { status: rows.some((r) => r.reliability.grade !== "D") ? "ok" : "degraded" }, noticeHealth, snapshot };
+  const payload: any = { schemaVersion: 3, observedAt, rows, fees, holdings, changes, warnings, noticePages: noticePageUrls(enabledFunds), health: { status: rows.some((r) => r.reliability.grade !== "D") ? "ok" : "degraded" }, noticeHealth, snapshot };
   const held = rows.filter((row) => {
     const prior = before?.byKey?.[row.key];
     return row.reliability.grade === "D" && prior && prior.reliability?.grade !== "D";
@@ -153,4 +162,4 @@ async function run(config: MonitorConfig, options: { observedAt?: string; fetchR
   return payload;
 }
 
-export { mapLimit, preferEvidence, run, shareFetches, stableSnapshot };
+export { mapLimit, noticePageUrls, preferEvidence, run, shareFetches, stableSnapshot };

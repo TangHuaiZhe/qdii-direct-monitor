@@ -13,6 +13,13 @@
       </view>
     </view>
 
+    <view class="card" wx:if="{{fund.noticePageUrl || fund.latestNoticeUrl}}">
+      <view class="section-title">公告与额度来源</view>
+      <view class="hint">基金公告页用于核对公开规则；最新额度公告/文档对应当前直销额度。</view>
+      <button wx:if="{{fund.noticePageUrl}}" class="source" data-url="{{fund.noticePageUrl}}" bindtap="copySource">复制基金公告页 · {{fund.noticePageHost}}</button>
+      <button wx:if="{{fund.latestNoticeUrl}}" class="source" data-url="{{fund.latestNoticeUrl}}" bindtap="copySource">复制最新额度公告/文档 · {{fund.latestNoticeHost}}</button>
+    </view>
+
     <view class="card">
       <view class="section-title">十大持仓股</view>
       <block wx:if="{{fund.holding}}">

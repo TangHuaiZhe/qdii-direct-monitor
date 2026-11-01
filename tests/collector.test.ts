@@ -3,8 +3,16 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const os = require("node:os");
 const path = require("node:path");
-const { preferEvidence, run, stableSnapshot } = require("../src/collector");
+const { noticePageUrls, preferEvidence, run, stableSnapshot } = require("../src/collector");
 const { buildSnapshot, compareSnapshots } = require("../src/model");
+
+test("collector exposes each fund's configured notice index page", () => {
+  const pages = noticePageUrls([
+    { code: "001668", officialSources: [{ kind: "notice-index", url: "https://www.99fund.com/001668/notices" }] },
+    { code: "040046", officialSources: [{ kind: "product", url: "https://www.huaan.com.cn/funds/040046" }] }
+  ]);
+  assert.deepEqual(pages, { "001668": "https://www.99fund.com/001668/notices" });
+});
 
 test("higher-grade evidence wins for the same channel key", () => {
   const base = { fundCode: "040046", fundName: "x", manager: "x", currency: "CNY", channel: { kind: "direct", access: "web" }, status: "limited", limitAmount: 100, observedAt: "x" };

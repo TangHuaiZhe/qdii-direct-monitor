@@ -42,7 +42,7 @@ function discoverNoticeCandidates(html, baseUrl, fund) {
     const title = link[2].replace(/\s+/g, " ").trim();
     if (!titleKeyword.test(title) || !/(申购|限额|暂停|恢复)/.test(title)) continue;
     const url = new URL(link[1], baseUrl).toString();
-    candidates.push({ manager: "汇添富基金", title, url, cacheKey: `${url}#pdf-attachment-v1`, publishedAt: date[1], fundCodes: [],
+    candidates.push({ manager: "汇添富基金", title, url, cacheKey: `${url}#pdf-attachment-v2`, publishedAt: date[1], fundCodes: [],
       currencyScope: /美元/.test(title) ? "USD" : (/人民币/.test(title) ? "CNY" : "all"), shareClasses: [],
       eventHint: /恢复申购/.test(title) ? "resume" : (/暂停申购/.test(title) && !/大额/.test(title) ? "suspend-all" : "unknown") });
   }
@@ -66,6 +66,7 @@ adapter.collect = async function collect(fund, context) {
       const article = await context.fetchResource(candidate.url, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
       const pdfUrl = extractPdfLinks(resourceToHtml(article), article.finalUrl)[0];
       if (!pdfUrl) throw new Error("official notice article has no PDF attachment");
+      candidate.pageUrl ||= candidate.url;
       candidate.url = pdfUrl;
       return context.fetchResource(pdfUrl, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
     } });

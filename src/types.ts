@@ -25,6 +25,7 @@ export interface Reliability {
 
 export interface EvidenceSource {
   url: string;
+  pageUrl?: string;
   kind: string;
   adapter: string;
 }
@@ -59,6 +60,7 @@ export interface NoticeCandidate {
   manager: string;
   title: string;
   url: string;
+  pageUrl?: string;
   publishedAt: string | null;
   fundCodes: string[];
   currencyScope: "CNY" | "USD" | "all" | "unknown";
@@ -77,6 +79,7 @@ export interface LimitEvent {
   effectiveAt: string;
   publishedAt: string | null;
   sourceUrl: string;
+  sourcePageUrl?: string | null;
   sourceAdapter: string;
 }
 

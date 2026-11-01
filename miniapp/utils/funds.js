@@ -148,6 +148,7 @@ function buildFunds(payload) {
   }
   const fees = new Map((payload.fees || []).map((fee) => [fee.fundCode, fee]));
   const holdings = new Map((payload.holdings || []).map((holding) => [holding.fundCode, holding]));
+  const noticePages = payload.noticePages || {};
   return [...grouped.entries()].map(([code, rows]) => {
     const first = rows[0];
     const direct = pickBestChannel(rows, "direct");
@@ -177,6 +178,10 @@ function buildFunds(payload) {
       fee,
       holding: holdingView(holdings.get(code)),
       feeScore: fee ? Number(fee.annualRate) : Number.MAX_SAFE_INTEGER,
+      noticePageUrl: direct?.source?.pageUrl || noticePages[code] || "",
+      noticePageHost: sourceHost(direct?.source?.pageUrl || noticePages[code]),
+      latestNoticeUrl: direct?.source?.url || "",
+      latestNoticeHost: sourceHost(direct?.source?.url),
       searchText: buildSearchText(first.fundName, first.manager, code),
       observations: rows.map(decorateObservation),
       rawRows: rows

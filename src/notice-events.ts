@@ -125,7 +125,7 @@ async function updateNoticeTimeline(options: {
       }
       freshEvents.push({ fundCode: fund.code, shareClass: fund.shareClass || null, currency: row.currency, channel: row.channel as any,
         action, amount: action === "set-limit" ? (row.limitAmount ?? null) : null, effectiveAt,
-        publishedAt: candidate.publishedAt, sourceUrl: candidate.url, sourceAdapter: adapter.id });
+        publishedAt: candidate.publishedAt, sourceUrl: candidate.url, sourcePageUrl: candidate.pageUrl || null, sourceAdapter: adapter.id });
       if (context.noticeHealth) context.noticeHealth.parsedNotices += 1;
     } catch (error) {
       if (context.noticeHealth) context.noticeHealth.rejectedNotices += 1;
@@ -152,7 +152,7 @@ async function updateNoticeTimeline(options: {
   return { fundCode: fund.code, fundName: fund.name, manager: fund.manager, index: fund.index || "nasdaq100", strategy: fund.strategy || "unknown",
     currency: event.currency, shareClass: fund.shareClass || "", channel: event.channel, status: state.status, limitAmount: state.limitAmount,
     accountBasis: "single-fund-account-daily-cumulative", observedAt: context.observedAt, effectiveDate: event.effectiveAt,
-    salesUrl: adapter.salesUrl(fund), source: { url: event.sourceUrl, kind: "notice", adapter: adapter.id },
+    salesUrl: adapter.salesUrl(fund), source: { url: event.sourceUrl, pageUrl: event.sourcePageUrl || undefined, kind: "notice", adapter: adapter.id },
     reliability: { grade: "B", reason: "official notice event timeline; actual logged-in transaction was not tested" }, notes: [] };
 }
 

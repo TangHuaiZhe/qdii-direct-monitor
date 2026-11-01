@@ -25,7 +25,7 @@ function discoverNoticeCandidates(resource) {
     currencyScope: "all",
     shareClasses: [],
     eventHint: /恢复申购/.test(notice.title) ? "resume" : "unknown",
-    cacheKey: `https://www.ccbfund.cn/resource/static/content/${notice.cntId}.html#attachment-v1`
+    cacheKey: `https://www.ccbfund.cn/resource/static/content/${notice.cntId}.html#attachment-v2`
   })).slice(0, 12);
 }
 
@@ -76,6 +76,7 @@ adapter.collect = async function collect(fund, context) {
       const article = await context.fetchResource(candidate.url, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
       const documentUrl = extractDocumentUrl(resourceToHtml(article), article.finalUrl);
       if (!documentUrl) throw new Error("official notice has no supported attachment");
+      candidate.pageUrl ||= candidate.url;
       candidate.url = documentUrl;
       return context.fetchResource(documentUrl, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
     } });

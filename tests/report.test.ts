@@ -155,6 +155,25 @@ test("renders an indexable fund detail page", () => {
   assert.match(html, /\.metric span\{color:#f6dfe2/);
 });
 
+test("renders fund notice page and latest quota document links on detail pages", () => {
+  const source = payload({ noticePages: { "040046": "https://www.huaan.com.cn/notices/" }, rows: [{
+    ...payload().rows[0],
+    source: { url: "https://www.huaan.com.cn/notice.pdf", pageUrl: "https://www.huaan.com.cn/notice/123.shtml", kind: "notice", adapter: "huaan" }
+  }] });
+  const html = renderFundHtml(source, "040046");
+  assert.match(html, /<h2>公告与额度来源<\/h2>/);
+  assert.match(html, /href="https:\/\/www\.huaan\.com\.cn\/notice\/123\.shtml"[^>]*>基金公告页<\/a>/);
+  assert.match(html, /class="evidence-url" href="https:\/\/www\.huaan\.com\.cn\/notice\/123\.shtml"[^>]*>https:\/\/www\.huaan\.com\.cn\/notice\/123\.shtml<\/a>/);
+  assert.match(html, /href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf"[^>]*>最新额度公告<\/a>/);
+  assert.doesNotMatch(html, /href="https:\/\/www\.huaan\.com\.cn\/notices\/" target="_blank"[^>]*>基金公告页/);
+});
+
+test("falls back to the configured fund notice index when no notice page is recorded", () => {
+  const source = payload({ noticePages: { "040046": "https://www.huaan.com.cn/notices/" } });
+  const html = renderFundHtml(source, "040046");
+  assert.match(html, /href="https:\/\/www\.huaan\.com\.cn\/notices\/"[^>]*>基金公告页<\/a>/);
+});
+
 test("renders explicit direct and agency detail links on list and detail pages", () => {
   const source = payload();
   source.rows.push({
@@ -181,27 +200,46 @@ test("keeps notice evidence separate from the official direct sales link", () =>
     ...payload().rows[0],
     source: { url: "https://www.huaan.com.cn/notice.pdf", kind: "notice", adapter: "huaan" }
   }] });
-  const html = renderHtml(source);
-  assert.match(html, /前往直销官网/);
-  assert.match(html, /href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf"[^>]*>证据<\/a>/);
-  assert.match(html, /href="https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml"/);
+  const listHtml = renderHtml(source);
+  assert.match(listHtml, /前往直销官网/);
+  assert.match(listHtml, /href="https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml"/);
+  assert.doesNotMatch(listHtml, /href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf"/);
+  const detailHtml = renderFundHtml(source, "040046");
+  assert.match(detailHtml, /href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf"[^>]*>证据<\/a>/);
 });
 
-test("shows direct quota evidence URLs in the page for manual verification", () => {
+test("shows direct quota evidence URLs on the fund detail page instead of the dashboard", () => {
   const source = payload({ rows: [
     { ...payload().rows[0], source: { url: "https://www.huaan.com.cn/notice.pdf", kind: "notice", adapter: "huaan" } },
     { ...payload().rows[0], channel: { kind: "direct", access: "app" }, source: { url: "https://www.huaan.com.cn/app-notice.pdf", kind: "notice", adapter: "huaan" } }
   ] });
   const listHtml = renderHtml(source);
-  assert.match(listHtml, /class="evidence-url" href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf" target="_blank" rel="noopener noreferrer">https:\/\/www\.huaan\.com\.cn\/notice\.pdf<\/a>/);
+  assert.doesNotMatch(listHtml, /class="evidence-url"/);
+  assert.doesNotMatch(listHtml, /href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf"/);
   const detailHtml = renderFundHtml(source, "040046");
   assert.match(detailHtml, /class="evidence-url" href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf" target="_blank" rel="noopener noreferrer">https:\/\/www\.huaan\.com\.cn\/notice\.pdf<\/a>/);
   assert.match(detailHtml, /class="evidence-url" href="https:\/\/www\.huaan\.com\.cn\/app-notice\.pdf" target="_blank" rel="noopener noreferrer">https:\/\/www\.huaan\.com\.cn\/app-notice\.pdf<\/a>/);
 });
 
-test("shows the direct source URL even when it matches the sales entry", () => {
-  const html = renderHtml(payload());
-  assert.match(html, /class="evidence-url" href="https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml" target="_blank" rel="noopener noreferrer">https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml<\/a>/);
+test("keeps the dashboard list focused on status and sales entries", () => {
+  const source = payload({ rows: [
+    { ...payload().rows[0], source: { url: "https://www.huaan.com.cn/notice.pdf", kind: "notice", adapter: "huaan" } },
+    { ...payload().rows[0], channel: { kind: "agency", access: "eastmoney", name: "天天基金" },
+      reliability: { grade: "B", reason: "current public agency sales page; logged-in order submission was not tested" },
+      source: { url: "https://fund.eastmoney.com/040046.html", kind: "public-sales-page", adapter: "eastmoney" } }
+  ] });
+  const listHtml = renderHtml(source);
+  assert.doesNotMatch(listHtml, /class="evidence-url"/);
+  assert.doesNotMatch(listHtml, /href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf"/);
+  assert.match(listHtml, /额度证据见各基金详情页/);
+  assert.match(listHtml, /href="funds\/040046\/"/);
+  assert.match(renderFundHtml(source, "040046"), /class="evidence-url" href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf"/);
+});
+
+test("shows the direct source URL on the fund detail page even when it matches the sales entry", () => {
+  const detailHtml = renderFundHtml(payload(), "040046");
+  assert.match(detailHtml, /class="evidence-url" href="https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml" target="_blank" rel="noopener noreferrer">https:\/\/www\.huaan\.com\.cn\/funds\/040046\/index\.shtml<\/a>/);
+  assert.doesNotMatch(renderHtml(payload()), /class="evidence-url"/);
 });
 
 test("does not render insecure sales links", () => {
@@ -217,7 +255,8 @@ test("does not render insecure sales links", () => {
   const html = renderHtml(source);
   assert.doesNotMatch(html, /前往直销官网/);
   assert.doesNotMatch(html, /查看代销详情/);
-  assert.match(html, />证据<\/a>/);
+  assert.doesNotMatch(html, /class="evidence-url"|href="http:\/\//);
+  assert.doesNotMatch(renderFundHtml(source, "040046"), /href="http:\/\//);
 });
 
 test("renders the configured non-Nasdaq-100 index label", () => {

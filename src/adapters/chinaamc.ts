@@ -16,7 +16,7 @@ function discoverNoticeCandidates(html, baseUrl) {
     if (!/(调整申购|限制申购|暂停申购|恢复申购|申购.*上限)/.test(title)) continue;
     if (/(节假日|非港股通|境外主要投资场所)/.test(title)) continue;
     const url = new URL(match[1], baseUrl).toString();
-    candidates.push({ manager: "华夏基金", title, url, cacheKey: `${url}#pdf-attachment-v1`, publishedAt: match[3], fundCodes: [],
+    candidates.push({ manager: "华夏基金", title, url, cacheKey: `${url}#pdf-attachment-v2`, publishedAt: match[3], fundCodes: [],
       currencyScope: /美元/.test(title) ? "USD" : (/人民币/.test(title) ? "CNY" : "all"), shareClasses: [],
       eventHint: /恢复申购/.test(title) ? "resume" : (/暂停申购/.test(title) && !/大额/.test(title) ? "suspend-all" : "unknown") });
   }
@@ -58,6 +58,7 @@ adapter.collect = async function collect(fund, context) {
       const article = await context.fetchResource(candidate.url, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
       const pdfUrl = extractPdfLinks(resourceToHtml(article), article.finalUrl)[0];
       if (!pdfUrl) return article;
+      candidate.pageUrl ||= candidate.url;
       candidate.url = pdfUrl;
       return context.fetchResource(pdfUrl, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
     } });

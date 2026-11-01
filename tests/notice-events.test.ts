@@ -89,6 +89,24 @@ test("timeline retries sources after the parser cache version changes", async ()
   }
 });
 
+test("timeline preserves the notice article page alongside the document URL", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "qdii-page-"));
+  try {
+    const documentUrl = "https://fund.chinaamc.com/upload/notice.pdf";
+    const pageUrl = "https://fund.chinaamc.com/c/2026-07-21/994290.shtml";
+    const context = { observedAt: "2026-10-31T00:00:00Z", warnings: [], timeoutMs: 10, eventCacheDir: root,
+      fetchResource: async () => ({ bytes: Buffer.from(""), contentType: "text/html", finalUrl: documentUrl }) };
+    const adapter = { id: "chinaamc", allowedHosts: ["chinaamc.com"], salesUrl: () => "https://fund.chinaamc.com/fund/005698/index.shtml",
+      parseResource: async () => [{ fundCode: "005698", currency: "CNY", shareClass: "A", channel: { kind: "direct", access: "all" }, status: "limited", limitAmount: 10000, effectiveDate: "2026-07-21" }] };
+    const fund = { code: "005698", name: "华夏全球科技先锋混合（QDII）A人民币", manager: "华夏基金", adapter: "chinaamc", currency: "CNY", shareClass: "A" };
+    const result = await updateNoticeTimeline({ adapter, fund, context, candidates: [{ manager: "华夏基金", title: "调整申购上限", url: documentUrl, pageUrl, publishedAt: "2026-07-21", fundCodes: [], currencyScope: "CNY", shareClasses: [], eventHint: "unknown" }] });
+    assert.equal(result.source.url, documentUrl);
+    assert.equal(result.source.pageUrl, pageUrl);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("timeline refuses an old event when the newest relevant notice failed", async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "qdii-stale-"));
   try {

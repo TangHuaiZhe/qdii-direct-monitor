@@ -54,6 +54,20 @@ test("miniapp keeps direct and agency displays separate", () => {
   assert.equal(funds[0].agencyAmountLabel, "10 元");
 });
 
+test("miniapp exposes the fund notice page and latest quota document", () => {
+  const funds = buildFunds({ rows: [row({ source: { url: "https://example.com/notice.pdf", pageUrl: "https://example.com/notice/123.html" } })],
+    fees: [], noticePages: { "040046": "https://example.com/notices/" } });
+  assert.equal(funds[0].noticePageUrl, "https://example.com/notice/123.html");
+  assert.equal(funds[0].noticePageHost, "example.com");
+  assert.equal(funds[0].latestNoticeUrl, "https://example.com/notice.pdf");
+});
+
+test("miniapp falls back to the configured fund notice index", () => {
+  const funds = buildFunds({ rows: [row()], fees: [], noticePages: { "040046": "https://example.com/notices/" } });
+  assert.equal(funds[0].noticePageUrl, "https://example.com/notices/");
+  assert.equal(funds[0].latestNoticeUrl, "https://example.com/fund");
+});
+
 test("miniapp decorates report-period look-through holdings", () => {
   const funds = buildFunds({ rows: [row()], fees: [], holdings: [{
     fundCode: "040046", sourceCode: "159632", exposure: "look-through", asOf: "2026-06-30",
