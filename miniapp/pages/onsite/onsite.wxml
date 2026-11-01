@@ -48,6 +48,23 @@
     </view>
 
     <block wx:else>
+      <view wx:if="{{!showAll && topQuotes.length}}" class="top3">
+        <view class="top3-note">按溢价率由低到高，先看最低的 3 只（校准溢价优先，暂缺时使用实时溢价）</view>
+        <view wx:for="{{topQuotes}}" wx:key="code" class="top3-item" data-code="{{item.code}}" bindtap="openDetail" hover-class="onsite-card-hover">
+          <view class="top3-id">
+            <text class="top3-code">{{item.code}}</text>
+            <text class="top3-name">{{item.name}}</text>
+            <text class="top3-meta">{{item.indexLabel}} · {{item.vehicleLabel}} · 净值日期 {{item.navDateLabel}}</text>
+          </view>
+          <view class="top3-metrics">
+            <view class="top3-metric"><text class="premium-value premium-{{item.calibratedBand}}">{{item.calibratedLabel}}</text><text class="top3-label">校准</text></view>
+            <view class="top3-metric"><text class="premium-value premium-{{item.liveBand}}">{{item.liveLabel}}</text><text class="top3-label">实时</text></view>
+          </view>
+        </view>
+        <button class="more-button" bindtap="toggleAll">查看全部 {{quotes.length}} 只</button>
+      </view>
+
+      <block wx:if="{{showAll}}">
       <view class="filters">
         <view class="search-wrap">
           <text class="search-icon">⌕</text>
@@ -99,6 +116,9 @@
         <view wx:if="{{!item.trusted}}" class="degraded">{{item.reliabilityReason}}</view>
         <view class="card-foot">查看详情与来源 <text>›</text></view>
       </view>
+
+        <button class="more-button" bindtap="toggleAll">收起列表</button>
+      </block>
     </block>
 
     <view class="disclaimer">校准溢价是主指标，实时溢价只作参考；两者都不是套利收益，也不构成投资建议。交易所公开行情与公开净值不等于登录后下单验证。</view>

@@ -247,6 +247,18 @@ const ONSITE_SECTION_CSS = `
 .onsite-placeholder p{margin:0}
 .onsite-placeholder .onsite-placeholder-title{margin-bottom:4px;color:var(--ink);font-size:15px;font-weight:750}
 .onsite-degraded{display:grid;gap:4px;margin:12px 0 0;padding:0;list-style:none;color:var(--muted);font-size:12px;line-height:1.5;text-align:left}
+.onsite-top3{margin:14px 0 12px}
+.onsite-top3-note{margin:0 0 8px;color:var(--muted);font-size:12px}
+.onsite-top3-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.onsite-top3-item{display:grid;grid-template-columns:84px minmax(0,1fr) auto;align-items:center;gap:6px 12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fdfdfe;text-align:left}
+.onsite-top3-name{display:flex;flex-direction:column;min-width:0}
+.onsite-top3-name strong{overflow:hidden;font-size:13px;line-height:1.4;text-overflow:ellipsis;white-space:nowrap}
+.onsite-top3-name small{color:var(--muted);font-size:11px;line-height:1.5}
+.onsite-top3-metrics{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 12px}
+.onsite-top3-metrics span{display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px}
+.onsite-top3-metrics small{color:var(--muted);font-size:10px;font-weight:600}
+.onsite-more{margin-top:10px}
+.onsite-all[hidden]{display:none}
 @media(max-width:900px){
 .onsite-table-wrap{overflow:visible;margin-top:6px}
 #onsite-table{min-width:0}
@@ -258,6 +270,8 @@ const ONSITE_SECTION_CSS = `
 }
 @media(max-width:760px){
 .onsite{padding:12px 14px 14px}
+.onsite-top3-item{grid-template-columns:70px minmax(0,1fr)}
+.onsite-top3-metrics{grid-column:1/-1;justify-content:flex-start}
 .onsite-stats{grid-template-columns:1fr}
 .onsite-stat{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:10px 12px}
 .onsite-stat dd{margin:0;font-size:18px}
@@ -278,6 +292,18 @@ const ONSITE_DETAIL_CSS = `
 `;
 
 const ONSITE_SCRIPT = `(() => {
+  const toggle = document.getElementById("onsite-toggle-all");
+  const all = document.getElementById("onsite-all");
+  if (toggle && all) {
+    const collapsedLabel = toggle.dataset.collapsedLabel || "查看全部";
+    const expandedLabel = toggle.dataset.expandedLabel || "收起列表";
+    toggle.addEventListener("click", () => {
+      const expanded = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", String(!expanded));
+      all.hidden = expanded;
+      toggle.textContent = expanded ? collapsedLabel : expandedLabel;
+    });
+  }
   const table = document.getElementById("onsite-table");
   const body = document.getElementById("onsite-body");
   if (!table || !body) return;
@@ -352,11 +378,32 @@ function onsiteSectionHtml(payload) {
   const filterGroup = (label: string, attribute: string, options: string[]) => `<div class="filter-group" role="group" aria-label="按${label}筛选"><span class="filter-label">${label}</span><div class="chips"><button class="filter-button active" type="button" ${attribute}="全部" aria-pressed="true">全部</button>${options.map((option) => `<button class="filter-button" type="button" ${attribute}="${escapeHtml(option)}" aria-pressed="false">${escapeHtml(option === "ETF" || option === "LOF" ? option : onsiteIndexLabel(option))}</button>`).join("")}</div></div>`;
   const filters = `<div class="onsite-filters">${filterGroup("指数", "data-onsite-index-filter", indexOptions)}${filterGroup("类型", "data-onsite-vehicle-filter", vehicleOptions)}</div>`;
 
+  const effectivePremium = (quote) => {
+    if (Number.isFinite(quote.premiumCalibratedPct)) return quote.premiumCalibratedPct;
+    if (Number.isFinite(quote.premiumLivePct)) return quote.premiumLivePct;
+    return null;
+  };
   const sorted = quotes.slice().sort((left, right) => {
-    const leftValue = Number.isFinite(left.premiumCalibratedPct) ? left.premiumCalibratedPct : -Number.MAX_VALUE;
-    const rightValue = Number.isFinite(right.premiumCalibratedPct) ? right.premiumCalibratedPct : -Number.MAX_VALUE;
-    return rightValue - leftValue || String(left.code).localeCompare(String(right.code));
+    const leftValue = effectivePremium(left);
+    const rightValue = effectivePremium(right);
+    if (leftValue === null && rightValue === null) return String(left.code).localeCompare(String(right.code));
+    if (leftValue === null) return 1;
+    if (rightValue === null) return -1;
+    return leftValue - rightValue || String(left.code).localeCompare(String(right.code));
   });
+  const lowest = sorted
+    .filter((quote) => (quote.reliability?.grade || "D") !== "D" && quote.carriedForward !== true && effectivePremium(quote) !== null)
+    .slice(0, 3);
+  const lowestItems = lowest.map((quote) => {
+    const calibrated = quote.premiumCalibratedPct;
+    const live = quote.premiumLivePct;
+    const calibratedBand = premiumBand(calibrated, thresholds);
+    const liveBand = premiumBand(live, thresholds);
+    return `<li class="onsite-top3-item"><a class="onsite-code" href="onsite/${escapeHtml(quote.code)}/">${escapeHtml(quote.code)}</a><span class="onsite-top3-name"><strong>${escapeHtml(quote.name || "—")}</strong><small>${escapeHtml(onsiteIndexLabel(quote.index))} · ${escapeHtml(onsiteVehicleLabel(quote.vehicle))} · 净值日期 ${escapeHtml(quote.navDate || quote.refNavDate || "—")}</small></span><span class="onsite-top3-metrics"><span><b class="onsite-premium premium-${calibratedBand.key}">${escapeHtml(formatPremium(calibrated))}</b><small>校准</small></span><span><b class="onsite-premium premium-${liveBand.key}">${escapeHtml(formatPremium(live))}</b><small>实时</small></span></span></li>`;
+  }).join("");
+  const lowestBlock = lowest.length
+    ? `<div class="onsite-top3"><p class="onsite-top3-note">按溢价率由低到高，先看最低的 3 只（校准溢价优先，暂缺时使用实时溢价）</p><ul class="onsite-top3-list">${lowestItems}</ul><button class="filter-button onsite-more" id="onsite-toggle-all" type="button" aria-expanded="false" aria-controls="onsite-all" data-collapsed-label="查看全部 ${escapeHtml(quotes.length)} 只">查看全部 ${escapeHtml(quotes.length)} 只</button></div>`
+    : "";
   const rows = sorted.map((quote) => {
     const grade = quote.reliability?.grade || "D";
     const calibrated = quote.premiumCalibratedPct;
@@ -372,7 +419,8 @@ function onsiteSectionHtml(payload) {
     return `<tr class="onsite-row" data-onsite-index="${escapeHtml(quote.index || "")}" data-onsite-vehicle="${escapeHtml(quote.vehicle || "")}" data-onsite-premium="${Number.isFinite(calibrated) ? calibrated : ""}" data-onsite-code="${escapeHtml(quote.code)}"><td class="onsite-cell-code" data-label="代码"><a class="onsite-code" href="${detailHref}">${escapeHtml(quote.code)}</a></td><td class="onsite-cell-fund" data-label="名称"><strong class="onsite-name">${escapeHtml(quote.name || "—")}</strong><span class="onsite-manager">${escapeHtml(quote.manager || "")}</span>${carriedBadge}</td><td data-label="指数">${escapeHtml(onsiteIndexLabel(quote.index))}</td><td data-label="类型"><span class="vehicle-badge vehicle-${escapeHtml(String(quote.vehicle || "").toLowerCase())}">${escapeHtml(onsiteVehicleLabel(quote.vehicle))}</span></td><td data-label="收盘价">${escapeHtml(formatQuotePrice(quote.price))}<small class="onsite-date">${escapeHtml(quote.priceDate || "")}</small></td><td data-label="参考净值">${escapeHtml(formatQuotePrice(quote.refNav, 4))}<small class="onsite-ref-kind">${escapeHtml(refNavKindLongLabel(quote.refNavKind))}</small></td><td class="onsite-cell-calibrated" data-label="校准溢价"><span class="onsite-premium premium-${calibratedBand.key}">${escapeHtml(formatPremium(calibrated))}</span><small class="onsite-date">${escapeHtml(quote.calibratedForDate ? `校准日 ${quote.calibratedForDate}` : "")}</small></td><td data-label="实时溢价"><span class="onsite-premium premium-${liveBand.key}">${escapeHtml(formatPremium(live))}</span><small class="onsite-date">含美股时差</small></td><td data-label="净值日期">${escapeHtml(quote.navDate || quote.refNavDate || "—")}</td><td data-label="成交额">${escapeHtml(formatTurnoverCny(quote.turnoverCny))}</td><td data-label="可靠性"><span class="grade grade-${escapeHtml(grade)}" title="${escapeHtml(reason)}" aria-label="证据等级 ${escapeHtml(grade)}">${escapeHtml(grade)}</span><small class="onsite-why">${escapeHtml(reason)}</small></td><td class="onsite-cell-evidence" data-label="证据"><a class="source-link" href="${detailHref}">详情与来源</a></td></tr>`;
   }).join("");
   const table = `<div class="table-wrap onsite-table-wrap"><table id="onsite-table"><caption class="sr-only">场内折溢价：校准溢价按同日收盘价与同日单位净值计算，实时溢价含美股时差；D 级表示无法核验，不代表可交易。</caption><thead><tr><th scope="col">代码</th><th scope="col">名称</th><th scope="col">指数</th><th scope="col">类型</th><th scope="col">收盘价</th><th scope="col">参考净值</th><th scope="col">校准溢价</th><th scope="col">实时溢价</th><th scope="col">净值日期</th><th scope="col">成交额</th><th scope="col">可靠性</th><th scope="col">证据</th></tr></thead><tbody id="onsite-body">${rows}</tbody></table><div id="onsite-empty" class="empty" role="status"><p>没有符合当前条件的场内基金</p></div></div>`;
-  return `<section class="onsite" id="onsite-premium">${head}${method}${healthNote}${stats}${filters}${table}</section>`;
+  const allWrapper = `<div class="onsite-all" id="onsite-all"${lowest.length ? " hidden" : ""}>${filters}${table}</div>`;
+  return `<section class="onsite" id="onsite-premium">${head}${method}${healthNote}${stats}${lowestBlock}${allWrapper}</section>`;
 }
 
 function renderOnsiteFundHtml(payload, code, baseUrl = "https://tanghuaizhe.github.io/qdii-direct-monitor/") {

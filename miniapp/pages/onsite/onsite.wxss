@@ -62,3 +62,15 @@
 .retry { width: 220rpx; margin-top: 24rpx; border-radius: 999rpx; background: #137552; color: #fff; font-size: 25rpx; }
 .disclaimer { padding: 20rpx 14rpx 10rpx; color: #7a857e; font-size: 21rpx; line-height: 1.6; text-align: center; }
 @keyframes pulse { 0%,100% { opacity: .35; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
+.top3 { margin: 18rpx 0 8rpx; }
+.top3-note { margin-bottom: 12rpx; color: #7a857e; font-size: 20rpx; line-height: 1.5; }
+.top3-item { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; margin-bottom: 12rpx; padding: 20rpx 22rpx; border: 1rpx solid #e1e7e2; border-radius: 22rpx; background: #fff; }
+.top3-id { display: flex; flex-direction: column; min-width: 0; }
+.top3-code { color: #137552; font-size: 21rpx; font-weight: 750; }
+.top3-name { overflow: hidden; margin: 4rpx 0; color: #1b2620; font-size: 26rpx; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.top3-meta { color: #7a857e; font-size: 19rpx; }
+.top3-metrics { display: flex; flex: none; gap: 18rpx; }
+.top3-metric { display: flex; flex-direction: column; align-items: flex-end; }
+.top3-metric .premium-value { font-size: 30rpx; }
+.top3-label { color: #7a857e; font-size: 18rpx; }
+.more-button { margin-top: 8rpx; border: 1rpx solid #137552; border-radius: 999rpx; background: #fff; color: #137552; font-size: 23rpx; }

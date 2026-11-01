@@ -1,7 +1,7 @@
 "use strict";
 
 const { loadPayload } = require("../../utils/api");
-const { onsiteSummary, filterOnsiteQuotes, onsiteIndexOptions, buildOnsiteQuotes, formatObservedAt } = require("../../utils/onsite");
+const { onsiteSummary, filterOnsiteQuotes, onsiteIndexOptions, buildOnsiteQuotes, lowestPremiumQuotes, formatObservedAt } = require("../../utils/onsite");
 
 Page({
   data: {
@@ -13,6 +13,8 @@ Page({
     hasData: false,
     quotes: [],
     visibleQuotes: [],
+    topQuotes: [],
+    showAll: false,
     indexOptions: ["全部"],
     indexFilter: "全部",
     query: ""
@@ -35,14 +37,19 @@ Page({
       getApp().globalData.payload = payload;
       const quotes = buildOnsiteQuotes(payload);
       const summary = onsiteSummary(payload);
+      const topQuotes = lowestPremiumQuotes(quotes, 3);
       this.setData({
         loading: false,
         quotes,
+        topQuotes,
         summary,
         hasData: quotes.some((quote) => quote.trusted),
         observedAt: formatObservedAt(payload.observedAt),
         originMessage: result.origin === "stale-cache" ? "网络不可用，当前显示上次缓存" : "数据来自公开监控服务",
-        indexOptions: onsiteIndexOptions(quotes)
+        indexOptions: onsiteIndexOptions(quotes),
+        // If no row is eligible for the collapsed top-3 (all D or carried forward),
+        // show the full list instead of an empty screen.
+        showAll: topQuotes.length ? this.data.showAll : true
       });
       this.applyFilters();
     } catch (error) {
@@ -56,6 +63,10 @@ Page({
       index: this.data.indexFilter
     });
     this.setData({ visibleQuotes });
+  },
+
+  toggleAll() {
+    this.setData({ showAll: !this.data.showAll });
   },
 
   onSearch(event) {

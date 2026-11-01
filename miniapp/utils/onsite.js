@@ -105,6 +105,7 @@ function decorateQuote(quote, thresholds) {
     vehicleLabel: quote.vehicle === "ETF" || quote.vehicle === "LOF" ? quote.vehicle : "—",
     exchangeLabel: exchangeLabel(quote.exchange),
     calibratedValue: calibrated,
+    liveValue: live,
     calibratedLabel: formatSignedPct(quote.premiumCalibratedPct),
     calibratedBand: premiumBand(calibrated, thresholds),
     calibratedBandLabel: premiumBandLabel(calibrated, thresholds),
@@ -141,11 +142,31 @@ function decorateQuote(quote, thresholds) {
 function buildOnsiteQuotes(payload) {
   const quotes = Array.isArray(payload?.quotes) ? payload.quotes.filter((quote) => quote && /^\d{6}$/.test(String(quote.code || ""))) : [];
   const thresholds = payload?.premiumSummary?.thresholds || {};
+  const effective = (quote) => (quote.calibratedValue !== null ? quote.calibratedValue : quote.liveValue);
   return quotes.map((quote) => decorateQuote(quote, thresholds)).sort((left, right) => {
-    const leftValue = left.calibratedValue === null ? -Number.MAX_VALUE : left.calibratedValue;
-    const rightValue = right.calibratedValue === null ? -Number.MAX_VALUE : right.calibratedValue;
-    return rightValue - leftValue || String(left.code).localeCompare(String(right.code));
+    const leftValue = effective(left);
+    const rightValue = effective(right);
+    const leftKnown = isFiniteNumber(leftValue);
+    const rightKnown = isFiniteNumber(rightValue);
+    if (!leftKnown && !rightKnown) return String(left.code).localeCompare(String(right.code));
+    if (!leftKnown) return 1;
+    if (!rightKnown) return -1;
+    return leftValue - rightValue || String(left.code).localeCompare(String(right.code));
   });
+}
+
+/**
+ * The page starts with the three listings whose premium is lowest (calibrated first,
+ * falling back to the live figure), mirroring the web dashboard. D-grade and
+ * carried-forward rows are not ranked here: they have no current premium to compare.
+ */
+function lowestPremiumQuotes(quotes, limit) {
+  const count = isFiniteNumber(limit) ? Number(limit) : 3;
+  const effective = (quote) => (quote.calibratedValue !== null ? quote.calibratedValue : quote.liveValue);
+  return (quotes || [])
+    .filter((quote) => quote && quote.trusted && !quote.carriedForward && isFiniteNumber(effective(quote)))
+    .sort((left, right) => effective(left) - effective(right) || String(left.code).localeCompare(String(right.code)))
+    .slice(0, Math.max(0, count));
 }
 
 function findOnsiteQuote(payload, code) {
@@ -212,6 +233,7 @@ module.exports = {
   formatSignedPct,
   formatTurnover,
   indexLabel,
+  lowestPremiumQuotes,
   onsiteIndexOptions,
   onsiteReasonLabel,
   onsiteSummary,

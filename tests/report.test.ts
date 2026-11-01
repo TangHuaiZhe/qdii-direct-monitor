@@ -465,7 +465,15 @@ test("renders the onsite premium section after the purchase summary", () => {
   assert.match(html, /data-onsite-vehicle-filter="LOF"/);
   assert.match(html, /href="onsite\/513100\/"/);
   assert.match(html, /官方可用 15 只 · 第三方降级 1 只 · 失败 2 只/);
-  assert.ok(html.indexOf('data-onsite-code="159501"') < html.indexOf('data-onsite-code="161125"'), "onsite rows default to calibrated premium descending");
+  assert.ok(html.indexOf('data-onsite-code="161125"') < html.indexOf('data-onsite-code="159501"'), "onsite rows default to the lowest premium first");
+  const collapsed = html.match(/<div class="onsite-top3">([\s\S]*?)<\/div><div class="onsite-all"/);
+  assert.ok(collapsed, "onsite section starts collapsed with a top-3 list");
+  assert.ok(collapsed[1].indexOf("161125") < collapsed[1].indexOf("161130"), "top-3 is ordered by ascending premium");
+  assert.ok(collapsed[1].indexOf("161130") < collapsed[1].indexOf("513100"), "top-3 keeps the three lowest premiums");
+  assert.match(collapsed[1], /查看全部 18 只/);
+  assert.match(collapsed[1], /aria-expanded="false"/);
+  assert.match(html, /<div class="onsite-all" id="onsite-all" hidden>/);
+  assert.match(html, /getElementById\("onsite-toggle-all"\)/);
   assert.ok(html.indexOf("当前更方便购买") < html.indexOf('id="onsite-premium"'), "onsite section follows the purchase summary");
   assert.ok(html.indexOf('id="onsite-premium"') < html.indexOf('id="fund-list"'), "onsite section stays above the fund list");
   assert.match(html, /沿用上次可信值 · 原始时间/);
@@ -475,6 +483,18 @@ test("renders the onsite premium section after the purchase summary", () => {
   assert.match(html, /getElementById\("onsite-table"\)/);
   assert.match(html, /getElementById\("fund-body"\)/);
   assert.doesNotMatch(html, /href="http:\/\//);
+});
+
+test("onsite section shows the full list when nothing is eligible for the top-3", () => {
+  const quotes = normalOnsiteQuotes().map((quote) => ({ ...quote, carriedForward: true }));
+  const html = renderHtml(onsitePayload({
+    quotes,
+    quotesByCode: Object.fromEntries(quotes.map((quote) => [quote.code, quote]))
+  }));
+  assert.doesNotMatch(html, /class="onsite-top3"/);
+  assert.match(html, /<div class="onsite-all" id="onsite-all">/);
+  assert.doesNotMatch(html, /id="onsite-all" hidden/);
+  assert.match(html, /data-onsite-code="161125"/);
 });
 
 test("onsite section refuses to fall back to old values without a trusted quote", () => {

@@ -15,6 +15,7 @@ const {
   buildOnsiteQuotes,
   filterOnsiteQuotes,
   findOnsiteQuote,
+  lowestPremiumQuotes,
   onsiteReasonLabel,
   onsiteSummary
 } = require("../miniapp/utils/onsite");
@@ -196,7 +197,11 @@ function onsitePayload(overrides = {}) {
 test("miniapp reads onsite premium fields from latest.json", () => {
   const quotes = buildOnsiteQuotes(onsitePayload());
   assert.equal(quotes.length, 4);
-  assert.deepEqual(quotes.map((quote) => quote.code), ["159941", "513100", "161125", "513500"]);
+  // The list starts from the lowest premium (calibrated first, live as fallback) and
+  // keeps unknown premiums last.
+  assert.deepEqual(quotes.map((quote) => quote.code), ["513100", "161125", "159941", "513500"]);
+  // The collapsed view skips D-grade and carried-forward rows, so only two qualify here.
+  assert.deepEqual(lowestPremiumQuotes(quotes, 3).map((quote) => quote.code), ["513100", "159941"]);
   const quote = findOnsiteQuote(onsitePayload(), "513100");
   assert.equal(quote.calibratedLabel, "+2.14%");
   assert.equal(quote.liveLabel, "+13.89%");
