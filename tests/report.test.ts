@@ -28,15 +28,24 @@ test("renders a self-contained Chinese HTML report", () => {
   assert.match(html, /<!doctype html>/);
   assert.match(html, /QDII 申购额度与费率/);
   assert.match(html, /网上直销/);
-  assert.match(html, /100 元/);
-  assert.match(html, /费率来源/);
+  assert.match(html, /100<small>元<\/small>/);
+  assert.match(html, /来源与证据见各基金详情页/);
   assert.match(html, /0\.80%/);
   assert.match(html, /仅看可购买/);
   assert.match(html, /综合费率从低到高/);
   assert.match(html, /og:image/);
   assert.match(html, /qdii-direct-monitor\/og\.png/);
   assert.match(html, /--primary:#b4232f/);
-  assert.match(html, /linear-gradient\(135deg,#7f1420,#b4232f 72%,#cf4450\)/);
+  assert.match(html, /--primary-deep:#781322/);
+  assert.match(html, /class="masthead"/);
+  assert.match(html, /class="snapshot" aria-label="最新快照"/);
+  assert.match(html, /<a class="skip-link" href="#fund-list">/);
+  assert.match(html, /<caption class="sr-only">/);
+  assert.match(html, /<th scope="col" aria-sort="none">/);
+  assert.match(html, /aria-pressed="true"/);
+  assert.match(html, /role="status" aria-live="polite"/);
+  assert.match(html, /id="clear-filters"/);
+  assert.match(html, /thead th\{position:sticky;top:0;/);
   assert.match(html, /id="refresh-page"/);
   assert.match(html, /commit <code>0123456<\/code>/);
   assert.match(html, /href="https:\/\/github\.com\/TangHuaiZhe\/qdii-direct-monitor\/commit\/0123456789abcdef0123456789abcdef01234567"/);
@@ -63,14 +72,18 @@ test("renders a self-contained Chinese HTML report", () => {
   assert.match(html, /\.manager-tone-5\{background:#f7e6df;color:#8a4933\}/);
 });
 
-test("renders the responsive market-terminal design", () => {
+test("renders the compact snapshot header and mobile card layout", () => {
   const html = renderHtml(payload());
   assert.match(html, /NASDAQ 100 · 场外份额监控/);
-  assert.match(html, /class="market-rail"/);
+  assert.match(html, /class="masthead"/);
+  assert.match(html, /class="snapshot" aria-label="最新快照"/);
   assert.match(html, /prefers-reduced-motion/);
-  assert.match(html, /\.hero\{grid-template-columns:1fr;min-height:150px/);
+  assert.match(html, /@media\(max-width:760px\)/);
+  assert.match(html, /@media\(max-width:360px\)/);
+  assert.doesNotMatch(html, /class="market-rail"/);
   assert.doesNotMatch(html, /class="hero-code"/);
   assert.doesNotMatch(html, />NDX</);
+  assert.doesNotMatch(html, /linear-gradient/);
 });
 
 test("escapes untrusted source data", () => {
@@ -231,7 +244,7 @@ test("keeps the dashboard list focused on status and sales entries", () => {
   const listHtml = renderHtml(source);
   assert.doesNotMatch(listHtml, /class="evidence-url"/);
   assert.doesNotMatch(listHtml, /href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf"/);
-  assert.match(listHtml, /额度证据见各基金详情页/);
+  assert.match(listHtml, /来源与证据见各基金详情页/);
   assert.match(listHtml, /href="funds\/040046\/"/);
   assert.match(renderFundHtml(source, "040046"), /class="evidence-url" href="https:\/\/www\.huaan\.com\.cn\/notice\.pdf"/);
 });
