@@ -86,6 +86,25 @@ async function mapLimit<T, R>(items: T[], concurrency: number, iterator: (item: 
   return result;
 }
 
+/**
+ * The Eastmoney push2 endpoint intermittently answers HTTP 502 to CI runners (observed
+ * while the SZSE official endpoint was already unreachable, which would leave 11 listings
+ * with only carried-forward values). One short retry makes the fallback usable without
+ * retrying the slow official requests.
+ */
+async function fetchQuoteWithOneRetry(context: CollectorContext, url: string, options: Record<string, unknown>) {
+  try {
+    return await context.fetchResource(url, options as never);
+  } catch (firstError) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    try {
+      return await context.fetchResource(url, options as never);
+    } catch {
+      throw firstError;
+    }
+  }
+}
+
 function degradedQuote(fund: OnsiteFund, observedAt: string, reason: string): QuoteObservation {
   return {
     code: fund.code,
@@ -166,7 +185,7 @@ async function collectOne(fund: OnsiteFund, settings: OnsiteSettings, context: C
   if (price == null && settings.sources?.eastmoney !== false) {
     try {
       const url = eastmoneyQuoteUrl(fund, fund.code);
-      const resource = await context.fetchResource(url, { allowedHosts: EASTMONEY_HOSTS, timeoutMs: context.timeoutMs });
+      const resource = await fetchQuoteWithOneRetry(context, url, { allowedHosts: EASTMONEY_HOSTS, timeoutMs: context.timeoutMs });
       const parsed = parseEastmoneyQuote(decodeText(resource), fund.code);
       if (!parsed) throw new Error("response was not safely parsed");
       priceSource = "eastmoney";

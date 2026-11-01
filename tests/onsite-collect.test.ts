@@ -202,6 +202,30 @@ test("falls back to the Eastmoney public quote when the official quote fails", a
   assert.deepEqual(quote.sources.map((source) => source.kind), ["third-party-quote", "nav"]);
 });
 
+test("retries the Eastmoney fallback once after a transient HTTP 502", async () => {
+  const fund = fundsByCode().get("513100");
+  const warnings = [];
+  let push2Calls = 0;
+  const fetchResource = successFetch({
+    handler: (url) => {
+      if (String(url).includes("yunhq.sse.com.cn")) throw new Error("ETIMEDOUT");
+      if (String(url).includes("push2.eastmoney.com")) {
+        push2Calls += 1;
+        if (push2Calls === 1) throw new Error("HTTP 502");
+        return resource(fs.readFileSync(path.join(__dirname, "fixtures", "onsite", "eastmoney-push2-513100.json"), "utf8"), url);
+      }
+      if (String(url).includes("f10/lsjz")) return resource(fs.readFileSync(path.join(__dirname, "fixtures", "onsite", "eastmoney-nav-513100.json"), "utf8"), url);
+      return null;
+    }
+  });
+  const result = await collectOnsiteQuotes([fund], config.onsite, context(fetchResource, warnings), {});
+  assert.equal(push2Calls, 2);
+  assert.equal(result.quotes[0].priceSource, "eastmoney");
+  assert.equal(result.quotes[0].reliability.grade, "B");
+  assert.equal(result.quotes[0].priceDate, "2026-10-30");
+  assert.deepEqual(result.health, { officialOk: 0, fallback: 1, failed: 0, degradedCodes: [] });
+});
+
 test("a later fallback close replaces an earlier stored close but stays grade B", async () => {
   const fund = fundsByCode().get("513100");
   const fetchResource = successFetch({
