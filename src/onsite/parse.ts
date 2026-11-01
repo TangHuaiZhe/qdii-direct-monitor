@@ -264,7 +264,13 @@ function parseEastmoneyQuote(input: string, expectedCode: string): any | null {
     if (!Number.isFinite(price) || price <= 0) return null;
     const rawPreclose = optionalNumber(data.f60);
     const preclose = rawPreclose != null && rawPreclose > 0 ? rawPreclose / scale : null;
-    return { code: String(data.f57), name: text(data.f58) || null, price, preclose };
+    // f86 is the last-trade timestamp in seconds. Without it a fallback quote would be
+    // dated with the observation time, which is wrong on weekends/holidays and would
+    // pollute the persisted close history used for the calibrated premium.
+    const rawTimestamp = optionalNumber(data.f86);
+    const priceAt = rawTimestamp != null && rawTimestamp > 0 ? new Date(rawTimestamp * 1000).toISOString() : null;
+    const priceDate = priceAt ? beijingDateOf(priceAt) : null;
+    return { code: String(data.f57), name: text(data.f58) || null, price, preclose, priceAt, priceDate };
   } catch {
     return null;
   }

@@ -105,7 +105,11 @@ test("parses the Eastmoney push2 fallback quote using f59 decimals", () => {
   assert.equal(quote.price, 2.239);
   assert.equal(quote.preclose, 2.289);
   assert.equal(quote.name, "纳指ETF");
+  assert.equal(quote.priceDate, "2026-10-30");
+  assert.equal(quote.priceAt, "2026-10-30T08:12:00.000Z");
   assert.equal(parseEastmoneyQuote(JSON.stringify({ data: { f43: 2239, f57: "513100", f58: "纳指ETF", f59: 2, f60: 2289 } }), "513100").price, 22.39);
+  // Without f86 the parser still returns the price but leaves the trade date unknown.
+  assert.equal(parseEastmoneyQuote(JSON.stringify({ data: { f43: 2239, f57: "513100", f59: 3 } }), "513100").priceDate, null);
 });
 
 test("Eastmoney push2 failures return null", () => {

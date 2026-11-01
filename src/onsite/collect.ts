@@ -66,7 +66,7 @@ function officialQuoteUrl(fund: OnsiteFund): string {
 
 function eastmoneyQuoteUrl(fund: OnsiteFund, code: string): string {
   const market = fund.exchange === "SSE" ? "1" : "0";
-  return `https://push2.eastmoney.com/api/qt/stock/get?secid=${market}.${code}&fields=f43,f57,f58,f59,f60`;
+  return `https://push2.eastmoney.com/api/qt/stock/get?secid=${market}.${code}&fields=f43,f57,f58,f59,f60,f86`;
 }
 
 function eastmoneyNavUrl(code: string): string {
@@ -171,8 +171,9 @@ async function collectOne(fund: OnsiteFund, settings: OnsiteSettings, context: C
       if (!parsed) throw new Error("response was not safely parsed");
       priceSource = "eastmoney";
       price = parsed.price;
-      priceDate = beijingDateOf(context.observedAt);
-      priceAt = priceDate ? context.observedAt : null;
+      priceDate = parsed.priceDate || beijingDateOf(context.observedAt);
+      priceAt = parsed.priceAt || (priceDate ? context.observedAt : null);
+      if (!parsed.priceDate) warnings.push(`${fund.code} onsite fallback quote: last-trade timestamp unavailable; using the observation time as the price date`);
       if (!priceDate) warnings.push(`${fund.code} onsite fallback quote: observation time is not a valid timestamp; price date unavailable`);
       sources.push({ url: resource.finalUrl || url, kind: "third-party-quote", adapter: "eastmoney" });
     } catch (error) {
@@ -258,9 +259,12 @@ async function collectOne(fund: OnsiteFund, settings: OnsiteSettings, context: C
  * recent CLOSE_HISTORY_DAYS dates are kept (string sort works for YYYY-MM-DD), which is
  * enough to calibrate premiums once the matching valuation-day NAV appears.
  *
- * Only official exchange closes are stored: an Eastmoney fallback price must never leak
- * into the calibration numerator, otherwise a B-grade third-party quote would silently
- * turn into an A-grade calibrated premium later.
+ * Official exchange closes are requested first, but a third-party close is stored when the
+ * exchange endpoint is unreachable (the SZSE API is blocked from some overseas runners).
+ * The current quote already drops to grade B/C when its price came from the fallback, so
+ * fallback closes carry the same caveat. Later runs overwrite earlier ones: the 15:05 /
+ * 20:30 close snapshot must replace any intraday price an earlier run stored for the same
+ * trading date.
  */
 function mergeCloseByDate(existing: Record<string, Record<string, number>> = {}, quotes: QuoteObservation[] = []): Record<string, Record<string, number>> {
   const merged: Record<string, Record<string, number>> = {};
@@ -273,7 +277,6 @@ function mergeCloseByDate(existing: Record<string, Record<string, number>> = {},
     if (Object.keys(clean).length) merged[date] = clean;
   }
   for (const quote of quotes) {
-    if (quote.priceSource !== "official") continue;
     if (quote.price == null || !Number.isFinite(quote.price) || quote.price <= 0 || !quote.priceDate) continue;
     const bucket = merged[quote.priceDate] || (merged[quote.priceDate] = {});
     bucket[quote.code] = quote.price;

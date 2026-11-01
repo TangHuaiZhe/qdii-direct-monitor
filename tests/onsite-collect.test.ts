@@ -194,13 +194,15 @@ test("falls back to the Eastmoney public quote when the official quote fails", a
   assert.equal(quote.refNav, 1.9663);
   assert.equal(quote.refNavKind, "nav");
   assert.equal(quote.premiumLivePct, 13.87);
-  assert.deepEqual(result.closeByDate, {});
+  // A fallback close is still the exchange close, so it is persisted for calibration;
+  // its lower grade is already reflected on the quote (B).
+  assert.deepEqual(result.closeByDate, { "2026-10-30": { "513100": 2.239 } });
   assert.deepEqual(result.health, { officialOk: 0, fallback: 1, failed: 0, degradedCodes: [] });
   assert.ok(warnings.some((warning) => /official quote/.test(warning)));
   assert.deepEqual(quote.sources.map((source) => source.kind), ["third-party-quote", "nav"]);
 });
 
-test("an Eastmoney fallback price never replaces a stored official close", async () => {
+test("a later fallback close replaces an earlier stored close but stays grade B", async () => {
   const fund = fundsByCode().get("513100");
   const fetchResource = successFetch({
     handler: (url) => {
@@ -213,7 +215,9 @@ test("an Eastmoney fallback price never replaces a stored official close", async
   const existing = { "2026-10-30": { "513100": 2.0 }, "2026-10-29": { "513100": 1.98 } };
   const result = await collectOnsiteQuotes([fund], config.onsite, context(fetchResource), existing);
   assert.equal(result.quotes[0].priceSource, "eastmoney");
-  assert.deepEqual(result.closeByDate, { "2026-10-29": { "513100": 1.98 }, "2026-10-30": { "513100": 2 } });
+  assert.equal(result.quotes[0].reliability.grade, "B");
+  // The 15:05/20:30 close must overwrite an earlier (possibly intraday) value for the same date.
+  assert.deepEqual(result.closeByDate, { "2026-10-29": { "513100": 1.98 }, "2026-10-30": { "513100": 2.239 } });
 });
 
 test("isolates a total failure as one D-grade quote instead of throwing", async () => {
