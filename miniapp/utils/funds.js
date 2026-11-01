@@ -207,13 +207,16 @@ function filterAndSortFunds(funds, filters = {}) {
   });
 }
 
+// Timestamps in this project describe mainland China market data, so render them in
+// Beijing time explicitly instead of relying on the device/CI time zone.
 function formatObservedAt(value) {
   if (!value) return "未知";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
+  const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000);
   const pad = (part) => String(part).padStart(2, "0");
-  return date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate())
-    + " " + pad(date.getHours()) + ":" + pad(date.getMinutes());
+  return beijing.getUTCFullYear() + "-" + pad(beijing.getUTCMonth() + 1) + "-" + pad(beijing.getUTCDate())
+    + " " + pad(beijing.getUTCHours()) + ":" + pad(beijing.getUTCMinutes());
 }
 
 module.exports = {
