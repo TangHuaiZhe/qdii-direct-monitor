@@ -118,15 +118,15 @@ function parseEffectiveDate(text) {
 
 function parseShareAmount(text, fund) {
   const value = normalizeExtractedText(text);
-  const codeRows = [...value.matchAll(/下属(?:基金份额|分级基金)的(?:交易)?代码\s+((?:\d{6}\s+){1,7}\d{6})/g)];
+  const codeRows = [...value.matchAll(/下属(?:基金份额|分级基金)的(?:交易)?代码\s+((?:(?:\d\s*){6})(?:\s*(?:\d\s*){6}){0,6})/g)];
   for (const match of codeRows) {
-    const codes: string[] = match[1].match(/\d{6}/g) || [];
+    const codes: string[] = match[1].replace(/\s+/g, "").match(/\d{6}/g) || [];
     const fundIndex = codes.indexOf(String(fund.code));
     if (fundIndex < 0) continue;
     const tail = value.slice(match.index + match[0].length);
     const label = tail.match(/(?:下属(?:基金份额|分级基金)的限制申购(?:（含[^）]{0,30}）)?金额|该基金份额的限制金额)（?[^\d]{0,30}(人民币元|元|美元)?）?\s*/);
     if (!label) continue;
-    const amounts = tail.slice(label.index + label[0].length).match(/[\d,]+(?:\.\d+)?(?:\s*万)?/g) || [];
+    const amounts = tail.slice(label.index + label[0].length).match(/[\d,]+(?:\.\d{1,2})?(?:\s*万)?/g) || [];
     if (!amounts[fundIndex]) continue;
     const raw = amounts[fundIndex];
     const amount = Number(raw.replace(/[,\s万]/g, "")) * (raw.includes("万") ? 10000 : 1);
@@ -143,9 +143,21 @@ function parseStatus(text) {
   return "unknown";
 }
 
+function extractMentionedCodes(text) {
+  const value = normalizeExtractedText(text);
+  const codes = new Set<string>(value.match(/\b\d{6}\b/g) || []);
+  for (const match of value.matchAll(/(?<!\d)(\d(?:\s*\d){5})(?!\d)/g)) codes.add(match[1].replace(/\s+/g, ""));
+  return [...codes];
+}
+
 function focusText(text, fund, radius = 900) {
   const value = clean(text);
   let index = value.indexOf(fund.code);
+  if (index < 0 && fund.code) {
+    const splitCode = new RegExp(String(fund.code).split("").join("\\s*"));
+    const match = splitCode.exec(value);
+    if (match) index = match.index;
+  }
   if (index < 0) {
     const token = String(fund.name || "").replace(/[（(].*$/, "").slice(0, 16);
     if (token) index = value.indexOf(token);
@@ -193,4 +205,4 @@ function extractPdfLinks(html, baseUrl) {
   return [...new Set(links)].slice(0, 2);
 }
 
-module.exports = { clean, extractPdfLinks, extractRelevantLinks, focusText, htmlToText, inferChannels, normalizeExtractedText, parseAmount, parseEffectiveDate, parseLimitEvent, parseShareAmount, parseStatus, pdfItemsToText, resourceToHtml, resourceToText };
+module.exports = { clean, extractMentionedCodes, extractPdfLinks, extractRelevantLinks, focusText, htmlToText, inferChannels, normalizeExtractedText, parseAmount, parseEffectiveDate, parseLimitEvent, parseShareAmount, parseStatus, pdfItemsToText, resourceToHtml, resourceToText };

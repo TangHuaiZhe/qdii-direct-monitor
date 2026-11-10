@@ -43,6 +43,40 @@ function preferEvidence(rows: unknown[]): Observation[] {
   return [...selected.values()].sort((a, b) => a.key.localeCompare(b.key));
 }
 
+const PINNED_NOTICE_CONFLICT_DAYS = 90;
+const PINNED_NOTICE_REVIEW_DAYS = 180;
+
+function auditStalePinnedNotices(funds: Fund[], rows: Observation[], observedAt: string, warnings: string[]): void {
+  const pinned = new Map<string, { effectiveDate: string | null }>();
+  for (const fund of funds) {
+    for (const source of fund.officialSources || []) {
+      if (source.kind === "notice" && source.url && source.effectiveDate) pinned.set(source.url, { effectiveDate: source.effectiveDate });
+    }
+  }
+  const now = effectiveTime(observedAt);
+  for (const row of rows) {
+    if (row.channel.kind !== "direct" || row.source?.kind !== "notice" || row.status === "unknown") continue;
+    const pin = pinned.get(row.source.url || "");
+    if (!pin) continue;
+    const pinnedTime = effectiveTime(pin.effectiveDate || row.effectiveDate);
+    if (!Number.isFinite(pinnedTime) || pinnedTime === Number.NEGATIVE_INFINITY) continue;
+    const ageDays = Math.floor((now - pinnedTime) / 86400000);
+    if (ageDays < PINNED_NOTICE_CONFLICT_DAYS) continue;
+    const agency = rows.find((item) => item.fundCode === row.fundCode && item.channel.kind === "agency");
+    const conflict = Boolean(agency) && (agency!.status !== row.status ||
+      (agency!.status === "limited" && row.status === "limited" && Number(agency!.limitAmount) !== Number(row.limitAmount)));
+    if (conflict) {
+      warnings.push(`${row.fundCode} ${row.channel.kind}/${row.channel.access}: pinned official notice is ${ageDays} days old and conflicts with the current public agency observation; direct amount withheld until official re-verification`);
+      row.status = "unknown";
+      row.limitAmount = null;
+      row.reliability = { grade: "D", reason: "pinned official notice is stale and conflicts with the current public agency status; direct channel needs official re-verification" };
+      row.notes = [...(row.notes || []), "Pinned notice is stale; configure latest-notice discovery for this manager."];
+    } else if (ageDays >= PINNED_NOTICE_REVIEW_DAYS) {
+      warnings.push(`${row.fundCode} ${row.channel.kind}/${row.channel.access}: pinned official notice is ${ageDays} days old; configure a latest-notice discovery source`);
+    }
+  }
+}
+
 function noticePageUrls(funds: Fund[]): Record<string, string> {
   const pages: Record<string, string> = {};
   for (const fund of funds) {
@@ -148,6 +182,7 @@ async function run(config: MonitorConfig, options: { observedAt?: string; fetchR
     return [...direct, ...agency, ...collectManual(fund, observedAt, warnings)];
   });
   const rows = preferEvidence(batches.flat());
+  auditStalePinnedNotices(enabledFunds, rows, observedAt, warnings);
   const fetchedFees = ((await mapLimit(enabledFunds, config.fetch?.feeConcurrency || 1, (fund) => collectOperatingFees(fund, context))) as FeeObservation[])
     .sort((a, b) => a.fundCode.localeCompare(b.fundCode));
   const mappings = config.portfolioMappings || {};
@@ -234,4 +269,4 @@ async function run(config: MonitorConfig, options: { observedAt?: string; fetchR
   return payload;
 }
 
-export { mapLimit, noticePageUrls, preferEvidence, run, shareFetches, stableSnapshot };
+export { auditStalePinnedNotices, mapLimit, noticePageUrls, preferEvidence, run, shareFetches, stableSnapshot };

@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { extractRelevantLinks, focusText, inferChannels, parseAmount, parseEffectiveDate, parseLimitEvent, parseShareAmount, parseStatus, pdfItemsToText, resourceToText } = require("../src/parser");
+const { extractMentionedCodes, extractRelevantLinks, focusText, inferChannels, parseAmount, parseEffectiveDate, parseLimitEvent, parseShareAmount, parseStatus, pdfItemsToText, resourceToText } = require("../src/parser");
 
 test("parses Chinese ten-thousand amount", () => assert.equal(parseAmount("单日单个基金账户累计申购金额不超过 1 万元").amount, 10000));
 test("parses direct product-page wording", () => {
@@ -29,6 +29,17 @@ test("maps distinct share-class amounts by fund code", () => {
   const text = "暂停大额申购 下属分级基金的交易代码 019736 019737 该分级基金是否暂停大额申购 是 是 下属分级基金的限制申购金额（单位：人民币元） 10 25 2. 其他需要提示的事项";
   assert.deepEqual(parseShareAmount(text, { code: "019736", currency: "CNY" }), { amount: 10, currency: "CNY" });
   assert.deepEqual(parseShareAmount(text, { code: "019737", currency: "CNY" }), { amount: 25, currency: "CNY" });
+});
+test("maps share-class amounts when PDF extraction splits a fund code", () => {
+  const text = "暂停大额申购 下属分级基金的交易代码 019736 01973 7 该分级基金是否暂停大额申购 是 是 下属分级基金的限制申购金额（单位：人民币元） 10 25 2. 其他需要提示的事项";
+  assert.deepEqual(parseShareAmount(text, { code: "019737", currency: "CNY" }), { amount: 25, currency: "CNY" });
+  assert.deepEqual(extractMentionedCodes(text).sort(), ["019736", "019737"]);
+});
+test("splits concatenated share-class amounts from PDF columns", () => {
+  const text = "下属分级基金的交易代码 019172 019173 019174 019175 该分级基金是否暂停大额申购 是 是 是 是 下属分级基金的限制申购金额（单位：人民币元） 10.00 10.001.001.00 2. 其他需要提示的事项";
+  assert.deepEqual(parseShareAmount(text, { code: "019172", currency: "CNY" }), { amount: 10, currency: "CNY" });
+  assert.deepEqual(parseShareAmount(text, { code: "019173", currency: "CNY" }), { amount: 10, currency: "CNY" });
+  assert.deepEqual(parseShareAmount(text, { code: "019174", currency: "CNY" }), { amount: 1, currency: "CNY" });
 });
 test("parses a PDF sentence using the RMB-yuan unit", () => {
   assert.deepEqual(parseAmount("单日单 个基金账户的申购金额不应超过 10 人民币元"), { amount: 10, currency: "CNY" });

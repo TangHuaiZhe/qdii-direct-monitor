@@ -4,8 +4,23 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { noticePageUrls, preferEvidence, run, stableSnapshot } = require("../src/collector");
+const { auditStalePinnedNotices, noticePageUrls, preferEvidence, run, stableSnapshot } = require("../src/collector");
 const { buildSnapshot, compareSnapshots } = require("../src/model");
+
+test("an old pinned notice that conflicts with current agency status is withheld", () => {
+  const funds = [{ code: "018043", officialSources: [{ kind: "notice", url: "https://cdn.example.com/old.pdf", effectiveDate: "2026-04-08" }] }];
+  const rows = [
+    { fundCode: "018043", fundName: "x", manager: "x", currency: "CNY", shareClass: "A", channel: { kind: "direct", access: "all" }, status: "limited", limitAmount: 100, observedAt: "2026-10-31T00:00:00Z", effectiveDate: "2026-04-08", source: { kind: "notice", url: "https://cdn.example.com/old.pdf" }, reliability: { grade: "B", reason: "official notice" }, notes: [] },
+    { fundCode: "018043", fundName: "x", manager: "x", currency: "CNY", shareClass: "A", channel: { kind: "agency", access: "eastmoney" }, status: "suspended", limitAmount: null, observedAt: "2026-10-31T00:00:00Z", source: { kind: "public-sales-page", url: "https://fund.eastmoney.com/018043.html" }, reliability: { grade: "B", reason: "current public agency sales page" }, notes: [] }
+  ];
+  const warnings = [];
+  auditStalePinnedNotices(funds, rows, "2026-10-31T00:00:00Z", warnings);
+  assert.equal(rows[0].status, "unknown");
+  assert.equal(rows[0].limitAmount, null);
+  assert.equal(rows[0].reliability.grade, "D");
+  assert.match(rows[0].reliability.reason, /pinned official notice is stale/);
+  assert.equal(warnings.length, 1);
+});
 
 test("collector exposes each fund's configured notice index page", () => {
   const pages = noticePageUrls([

@@ -1,5 +1,6 @@
 "use strict";
 const { createAdapter } = require("./base");
+const { recordTimelineHealth } = require("../notice-events");
 
 const API_HOST = "www.byfunds.com";
 const API_ROOT = `http://${API_HOST}/ws-business-server/fund`;
@@ -40,10 +41,13 @@ adapter.collect = async function collect(fund, context) {
     const pdf = await context.fetchResource(new URL(path, `http://${API_HOST}/`).toString(), {
       allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs
     });
-    rows.push(...await this.parseResource(pdf, fund, {
+    const parsed = await this.parseResource(pdf, fund, {
       kind: "notice",
       channel: { kind: "direct", access: "web" }
-    }, context.observedAt));
+    }, context.observedAt);
+    rows.push(...parsed);
+    recordTimelineHealth(context, this.id, fund.code, String(notice.pubDate || "").slice(0, 10) || null,
+      parsed.find((row) => row.status !== "unknown")?.effectiveDate || null);
   } catch (error) {
     context.warnings.push(`${fund.code} baoying notices: ${error.message}`);
   }

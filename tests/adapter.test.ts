@@ -9,6 +9,9 @@ const igwfmc = require("../src/adapters/igwfmc");
 const chinaamc = require("../src/adapters/chinaamc");
 const gf = require("../src/adapters/gf");
 const baoying = require("../src/adapters/baoying");
+const cmf = require("../src/adapters/cmf");
+const dacheng = require("../src/adapters/dacheng");
+const jpmorgan = require("../src/adapters/jpmorgan");
 const guotai = require("../src/adapters/guotai");
 const wanjia = require("../src/adapters/wanjia");
 const { adapters } = require("../src/adapters");
@@ -39,6 +42,16 @@ test("a notice for another explicit fund code cannot change the requested fund",
   const rows = await huaan.collect({ code: "040046", name: "华安纳指", manager: "华安基金", officialSources: [{ url: "https://www.huaan.com.cn/x", kind: "notice" }] }, context);
   assert.equal(rows[0].status, "unknown");
   assert.equal(rows[0].reliability.grade, "D");
+});
+
+test("a notice applies when PDF extraction splits the fund code across text runs", async () => {
+  const context = { observedAt: "2026-10-31T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => ({ bytes: Buffer.from("019736 01973 7 限制申购金额（单位：人民币元）10.00 暂停大额申购"), contentType: "text/html", finalUrl: url }) };
+  const rows = await huaan.collect({ code: "019737", name: "宝盈纳斯达克100指数发起（QDII）C人民币", manager: "宝盈基金", currency: "CNY", shareClass: "C",
+    officialSources: [{ url: "https://www.huaan.com.cn/x", kind: "notice", channel: { kind: "direct", access: "web" } }] }, context);
+  assert.equal(rows[0].status, "limited");
+  assert.equal(rows[0].limitAmount, 10);
+  assert.equal(rows[0].reliability.grade, "B");
 });
 
 test("one notice can explicitly cover web, app, and counter direct channels", async () => {
@@ -80,6 +93,14 @@ test("adapters with stable notice indexes never pin historical notice attachment
   }
 });
 
+test("discovery-capable adapters never pin a time-sensitive notice document", () => {
+  const config = require("../config/funds.example.json");
+  for (const fund of config.funds.filter((item) => ["baoying", "ccb", "chinaamc", "cmf", "dacheng", "huitianfu", "jpmorgan", "southern", "tianhong", "wanjia"].includes(item.adapter))) {
+    assert.equal(fund.officialSources.some((source) => source.kind === "notice"), false, fund.code);
+    assert.equal(fund.officialSources.some((source) => /\.(?:pdf|docx?)(?:$|\?)/i.test(source.url || "")), false, fund.code);
+  }
+});
+
 test("Huitianfu parses 001668 suspension notices instead of a stale status list", async () => {
   const text = "关于汇添富全球移动互联灵活配置混合型证券投资基金暂停申购、定期定额投资业务的公告 公告送出日期：2026年10月23日 下属基金份额的交易代码 001668 015202 015203 006426 该基金份额是否暂停上述业务 是 是 是 否 暂停申购起始日 2026年10月23日";
   const rows = await huitianfu.parseResource({ bytes: Buffer.from(text), contentType: "text/html", finalUrl: "https://www.99fund.com/notice.html" },
@@ -101,27 +122,30 @@ test("Huitianfu discovers 001668 global mobile internet purchase notices", () =>
   assert.equal(candidates[0].eventHint, "suspend-all");
 });
 
-test("Southern parses the latest A-share purchase limit notice", async () => {
-  const text = "基金主代码 016452 暂停大额申购起始日 2025年11月20日 下属基金份额的代码 016452 016453 021000 该基金份额的限制金额 100元 100元 2万元 自2025年11月20日起，如个人投资者单日单个基金账户单笔申购本基金A类基金份额超过100元，则仅对100元确认成功";
+test("Southern reads the current official status API instead of a pinned notice", async () => {
+  const payload = { code: "ETS-5BP00000", data: { fundlist: [
+    { fundCode: "016452", fundName: "南方纳斯达克100指数发起（QDII）A", sgStatus: "1", remark: "自2026年7月9日起，本基金A类份额的大额申购（含定投和转换转入）限额调整为10元。" },
+    { fundCode: "016453", fundName: "南方纳斯达克100指数发起（QDII）C", sgStatus: "0", remark: "暂停申购" }
+  ] } };
   const context = { observedAt: "2026-08-29T00:00:00Z", warnings: [], timeoutMs: 10,
-    fetchResource: async (url) => ({ bytes: Buffer.from(text), contentType: "text/html", finalUrl: url }) };
-  const rows = await southern.collect({ code: "016452", name: "南方纳指", manager: "南方基金", currency: "CNY", officialSources: [{ url: "https://www.nffund.com/x", kind: "notice", channel: { kind: "direct", access: "all" } }] }, context);
-  assert.equal(rows[0].status, "limited");
-  assert.equal(rows[0].limitAmount, 100);
+    fetchResource: async (url) => ({ bytes: Buffer.from(JSON.stringify(payload)), contentType: "application/json", finalUrl: url }) };
+  const rowsA = await southern.collect({ code: "016452", name: "南方纳指A", manager: "南方基金", currency: "CNY", shareClass: "A" }, context);
+  const rowsC = await southern.collect({ code: "016453", name: "南方纳指C", manager: "南方基金", currency: "CNY", shareClass: "C" }, context);
+  assert.equal(rowsA[0].status, "limited");
+  assert.equal(rowsA[0].limitAmount, 10);
+  assert.equal(rowsA[0].effectiveDate, "2026-07-09");
+  assert.equal(rowsA[0].reliability.grade, "A");
+  assert.equal(rowsC[0].status, "suspended");
 });
 
-test("Tianhong parses the official A/C share limit notice", async () => {
-  const text = "基金主代码 018043 暂停大额申购起始日 2026年04月08日 限制申购金额（单位：人民币元） 100.00 下属分级基金的交易代码 018043 018044 022525 该分级基金是否暂停大额申购 是 是 是";
-  const context = { observedAt: "2026-09-01T00:00:00Z", warnings: [], timeoutMs: 10,
-    fetchResource: async (url) => ({ bytes: Buffer.from(text), contentType: "text/html", finalUrl: url }) };
-  for (const [code, shareClass] of [["018043", "A"], ["018044", "C"]]) {
-    const rows = await tianhong.collect({ code, name: `天弘纳指${shareClass}`, manager: "天弘基金", currency: "CNY", shareClass,
-      officialSources: [{ url: "https://cdn-thweb.tianhongjijin.com.cn/fundnotice/x", kind: "notice", channel: { kind: "direct", access: "all" }, effectiveDate: "2026-04-08" }] }, context);
-    assert.equal(rows[0].status, "limited");
-    assert.equal(rows[0].limitAmount, 100);
-    assert.equal(rows[0].effectiveDate, "2026-04-08");
-    assert.equal(rows[0].reliability.grade, "B");
-  }
+test("Tianhong reads a current limit from the official fund status API", () => {
+  const payload = { payload: { fundInfo: { fundCode: "018043", fundStatus: "0" }, marquees: [
+    { title: "限购提示", subTitle: "自2026年8月1日起，单日单个基金账户累计申购金额不超过100元" }
+  ] } };
+  const parsed = tianhong.parseFundStatus(payload, { code: "018043", currency: "CNY" });
+  assert.equal(parsed.status, "limited");
+  assert.equal(parsed.amount, 100);
+  assert.equal(parsed.effectiveDate, "2026-08-01");
 });
 
 test("Tianhong page shape changes fail closed", async () => {
@@ -132,6 +156,17 @@ test("Tianhong page shape changes fail closed", async () => {
   assert.equal(rows[0].status, "unknown");
   assert.equal(rows[0].limitAmount, null);
   assert.equal(rows[0].reliability.grade, "D");
+});
+
+test("Tianhong rejects a status payload for another fund code", () => {
+  assert.throws(() => tianhong.parseFundStatus({ payload: { fundInfo: { fundCode: "018044", fundStatus: "0" }, marquees: [] } }, { code: "018043" }), /fund code mismatch/);
+});
+
+test("Southern does not infer suspension from a missing subscription field", () => {
+  const parsed = southern.parseStatusEntry({ fundCode: "016452", remark: "" }, { code: "016452" });
+  assert.equal(parsed.status, "unknown");
+  const suspended = southern.parseStatusEntry({ fundCode: "016452", sgStatus: "0", remark: "限额100元" }, { code: "016452" });
+  assert.equal(suspended.status, "suspended");
 });
 
 test("Wanjia separates the current direct limit from the agency limit", async () => {
@@ -466,6 +501,76 @@ test("Baoying picks the latest fund-level limit notice and ignores holiday notic
   assert.equal(notice.pubDate, "2026-09-24 08:49:58");
 });
 
+
+test("Dacheng discovers the latest official subscription notice list", () => {
+  const payload = { results: [{ data: [
+    { pub_date: "2026-10-27 09:00:00", title: "大成纳斯达克100交易型开放式指数证券投资基金联接基金（QDII）2026年第3季度报告", attachment_url: "/q3.pdf" },
+    { pub_date: "2026-09-01 09:00:00", title: "关于旗下部分基金2026年境外主要市场节假日暂停申购赎回安排的公告", attachment_url: "/holiday.pdf" },
+    { pub_date: "2026-06-03 09:00:00", title: "关于大成纳斯达克100交易型开放式指数证券投资基金联接基金（QDII）调整大额申购（含定期定额申购）的公告", attachment_url: "/limit.pdf" }
+  ] }] };
+  const candidates = dacheng.discoverNoticeCandidates(payload, "https://www.dcfund.com.cn");
+  assert.equal(candidates[0].url, "https://www.dcfund.com.cn/limit.pdf");
+  assert.equal(candidates[0].publishedAt, "2026-06-03");
+});
+
+test("Tianhong reads suspension from the current official fund status API", () => {
+  const payload = { payload: { fundInfo: { fundCode: "018043", fundStatus: "5" }, marquees: [
+    { title: "纳指标普暂停申购", subTitle: "为保证基金平稳运作，保护投资者利益，自2026年9月21日起，该产品暂停申购及定投业务，赎回业务正常办理" }
+  ] } };
+  const parsed = tianhong.parseFundStatus(payload, { code: "018043", currency: "CNY" });
+  assert.equal(parsed.status, "suspended");
+  assert.equal(parsed.effectiveDate, "2026-09-21");
+});
+
+test("CMF discovers the latest product announcement instead of a pinned notice", () => {
+  const html = [
+    '<li><a class="item" href="/web/noticedetails/226718/index.html" target="_blank"><p>招商基金管理有限公司旗下基金2026年第3季度报告提示性公告</p><span class="date">2026-10-27</span></a></li>',
+    '<li><a class="item" href="/web/noticedetails/226476/index.html" target="_blank"><p>关于暂停招商纳斯达克100交易型开放式指数证券投资基金发起式联接基金（QDII）申购（含定期定额投资）业务的公告</p><span class="date">2026-10-14</span></a></li>',
+    '<li><a class="item" href="/web/noticedetails/226016/index.html" target="_blank"><p>关于旗下部分基金2026年9月7日因境外主要投资市场节假日暂停申购、赎回、转换、定期定额投资业务的公告</p><span class="date">2026-09-03</span></a></li>',
+    '<li><a class="item" href="/web/noticedetails/226000/index.html" target="_blank"><p>关于调整招商纳斯达克100交易型开放式指数证券投资基金发起式联接基金（QDII）在直销机构大额申购（含定期定额投资）业务的公告</p><span class="date">2026-09-01</span></a></li>'
+  ].join("");
+  const candidates = cmf.discoverNoticeCandidates(html, "https://www.cmfchina.com/web/fundDetail/019547/index.html");
+  assert.equal(candidates[0].url, "https://www.cmfchina.com/web/noticedetails/226476/index.html");
+  assert.equal(candidates[0].publishedAt, "2026-10-14");
+});
+
+test("JPMorgan picks the latest official subscription-limit notice instead of a stale direct-channel notice", () => {
+  const html = [
+    '<div><a href="https://www.cifm.com/fund/019172/announce/202608/P020260831.pdf"><p class="title">摩根纳斯达克100指数型发起式证券投资基金(QDII)2026年中期报告</p></a><p class="category">类别: 基金公告：2026-08-31</p></div>',
+    '<div><a href="https://www.cifm.com/fund/019172/announce/202607/P020260724.pdf"><p class="title">摩根纳斯达克100指数型发起式证券投资基金(QDII)调整大额申购、定期定额投资及转换转入业务限制金额的公告</p></a><p class="category">类别: 基金公告：2026-07-24</p></div>',
+    '<div><a href="https://www.cifm.com/fund/019172/announce/202607/P020260709.pdf"><p class="title">摩根纳斯达克100指数型发起式证券投资基金(QDII)调整直销渠道大额申购、定期定额投资及转换转入业务限制金额的公告</p></a><p class="category">类别: 基金公告：2026-07-09</p></div>',
+    '<div><a href="https://www.cifm.com/fund/019172/announce/202601/P020260109.pdf"><p class="title">摩根纳斯达克100指数型发起式证券投资基金(QDII)2026年境外主要市场节假日暂停申购、赎回、定期定额投资及转换转入业务的公告</p></a><p class="category">类别: 基金公告：2026-01-09</p></div>'
+  ].join("");
+  const notice = jpmorgan.pickLatestNotice(html);
+  assert.equal(notice.url, "https://www.cifm.com/fund/019172/announce/202607/P020260724.pdf");
+  assert.equal(notice.publishedAt, "2026-07-24");
+});
+
+test("JPMorgan reads the latest all-channel notice for both RMB shares", async () => {
+  const searchHtml = '<div><a href="https://www.cifm.com/fund/019172/announce/202607/t20260724.html"><p class="title">摩根纳斯达克100指数型发起式证券投资基金(QDII)调整大额申购、定期定额投资及转换转入业务限制金额的公告</p></a><p class="category">类别: 基金公告：2026-07-24</p></div>';
+  const noticeHtml = "019172 019173 019174 019175 限制申购金额（单位：人民币元） 10.00 暂停大额申购";
+  const context = { observedAt: "2026-10-31T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => ({ bytes: Buffer.from(url.includes("/web/search") ? searchHtml : noticeHtml), contentType: "text/html", finalUrl: url }) };
+  for (const [code, shareClass] of [["019172", "A"], ["019173", "C"]]) {
+    const rows = await jpmorgan.collect({ code, name: `摩根纳斯达克100指数（QDII）人民币${shareClass}`, manager: "摩根基金", currency: "CNY", shareClass,
+      officialSources: [{ url: "https://www.cifm.com/fund/019172/announce/202607/P020260724.pdf", kind: "notice", channel: { kind: "direct", access: "all" } }] }, context);
+    assert.equal(rows[0].status, "limited");
+    assert.equal(rows[0].limitAmount, 10);
+    assert.equal(rows[0].reliability.grade, "B");
+  }
+});
+
+test("JPMorgan search failure returns unknown instead of trusting a product label", async () => {
+  const fund = { code: "019172", name: "摩根纳斯达克100指数（QDII）人民币A", manager: "摩根基金", currency: "CNY", shareClass: "A" };
+  const context = { observedAt: "2026-11-10T00:00:00Z", warnings: [], timeoutMs: 10,
+    fetchResource: async (url) => {
+      if (url.includes("/web/search")) throw new Error("search unavailable");
+      return { bytes: Buffer.from("019172 开放申购"), contentType: "text/html", finalUrl: url };
+    } };
+  const rows = await jpmorgan.collect(fund, context);
+  assert.equal(rows[0].status, "unknown");
+  assert.equal(rows[0].reliability.grade, "D");
+});
 
 test("Guotai reads the official inline daily purchase limit", () => {
   const html = `<script>var gtOptions = { fundcode: '160213', limits: {"buy":{"high":100,"low":1,"add":null,"ccn":"申购","application":99999,"accumulation":100},"sell":{"mps":0.01}}, flags: {"subscribe_state":false,"closed":false} };</script>`;

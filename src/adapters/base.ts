@@ -3,7 +3,7 @@
 import type { CollectorContext, DirectChannel, Fund, FundStatus, ObservationInput, OfficialSource, Resource } from "../types";
 
 const { fetchResource } = require("../http");
-const { extractPdfLinks, extractRelevantLinks, focusText, inferChannels, parseEffectiveDate, parseLimitEvent, parseStatus, resourceToHtml, resourceToText } = require("../parser");
+const { extractMentionedCodes, extractPdfLinks, extractRelevantLinks, focusText, inferChannels, parseEffectiveDate, parseLimitEvent, parseStatus, resourceToHtml, resourceToText } = require("../parser");
 
 class OfficialDirectAdapter {
   id: string;
@@ -25,7 +25,7 @@ class OfficialDirectAdapter {
   async parseResource(resource: Resource, fund: Fund, source: OfficialSource, observedAt: string): Promise<ObservationInput[]> {
     const fullText = await resourceToText(resource);
     const text = this.focus ? this.focus(fullText, fund) : focusText(fullText, fund);
-    const mentionedCodes = source.kind === "notice" ? (fullText.match(/\b\d{6}\b/g) || []) : [];
+    const mentionedCodes = source.kind === "notice" ? extractMentionedCodes(fullText) : [];
     const appliesToFund = !mentionedCodes.length || mentionedCodes.includes(fund.code);
     const event = appliesToFund && !this.parseAmount ? parseLimitEvent(text, fund) : null;
     const amount = appliesToFund ? (this.parseAmount ? this.parseAmount(text, fund) : event) : null;
