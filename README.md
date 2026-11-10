@@ -2,14 +2,14 @@
 
 [公开看板](https://tanghuaizhe.github.io/qdii-direct-monitor/) · [更新状态](https://github.com/TangHuaiZhe/qdii-direct-monitor/actions/workflows/pages.yml)
 
-监控国内纳斯达克 100、标普 500 及相关指数 QDII 基金的申购状态、每日额度和费率。项目优先采集基金公司直销信息，以天天基金等代销渠道补充，并为每条结果保留明确的基金份额、销售入口、证据来源和可靠性等级。同时监控 18 只场内纳指 100 / 标普 500 ETF 与 LOF 的折溢价，使用交易所官方行情与公开净值计算双口径溢价率。
+监控国内纳斯达克 100、标普 500 及相关 QDII 基金场外份额的申购状态、每日额度、费率和持仓。项目优先采集基金公司直销信息，以天天基金等代销渠道补充，并为每条结果保留明确的基金份额、销售入口、证据来源和可靠性等级。同时监控场内纳指 100 / 标普 500 ETF 与 LOF 的折溢价，使用交易所官方行情与公开净值计算双口径溢价率。
 
 > 公开网页和公告不等于登录后的真实下单结果。无法安全解析时，系统返回 `unknown/D`，不会猜测为开放申购。本项目仅提供信息监控，不构成投资建议。
 
 ## 核心能力
 
 - 18 家基金公司的独立 adapter，均通过官方域名白名单限制抓取范围。
-- 按“官方产品/交易页 → 官方公告 → `unknown`”回退，支持 HTML 和 PDF。
+- 按“当前官方产品/交易页 → 动态发现的最新官方公告 → `unknown`”回退，支持 HTML 和 PDF；固定公告仅作经过时效检查的最后回退。
 - 分开记录直销 Web、APP、柜台及各类代销入口，不合并不同渠道的额度。
 - 采集管理费、托管费和销售服务费，并计算年综合费率。
 - 对 ETF 联接基金进行底层持仓穿透，对主动基金展示公开持仓。
@@ -19,6 +19,10 @@
 - 提供原生微信小程序，读取与公开看板相同的 `latest.json`。
 
 默认基金池见 [`config/funds.example.json`](config/funds.example.json)，它是基金范围、份额类别、数据源和持仓映射的唯一准确信息源。
+
+### 网页分类
+
+当前配置同时覆盖纳斯达克 100、标普 500、纳斯达克科技及主动管理的场外份额。网页看板的“分类”筛选按配置中的 `index` 展示被动基金，按 `strategy: active` 将主动基金统一归入“主动”；基金详情仍保留各自的具体投资主题。“策略”筛选则独立显示主动或被动。场内列表与场外列表分开筛选。此处描述的是网页界面，小程序只消费公开数据，没有同步实现这组网页筛选控件。
 
 ## 数据模型
 
@@ -50,7 +54,7 @@
 | `premiumCalibratedPct` | 同一估值日收盘价 ÷ 该日单位净值 − 1 | 主指标，剔除美股时差错配，净值公布后才可计算 |
 | `premiumLivePct` | 现价 ÷ 最新公布参考净值（IOPV/参考净值优先）− 1 | 盘中辅助读数，含美股时差，不代表套利空间 |
 
-参考净值优先使用交易所发布的参考净值/IOPV，其次使用公开净值；两源偏差超过阈值、无成交、净值滞后或无法安全解析时降级或返回 `null`，不猜测。交易所行情不可达时（例如海外 CI 访问深交所接口超时），价格降级为第三方公开行情并标为 B 级，页面明确标注“交易所官方行情不可用”；此时用于校准口径的收盘价也继承该等级。场内溢价与场外申购额度是两套指标，不合并、不相加、不互相推断。
+参考净值优先使用交易所发布的参考净值/IOPV，其次使用公开净值；两源偏差超过阈值、无成交、净值滞后或无法安全解析时降级或返回 `null`，不猜测。交易所行情不可达时（例如海外 CI 访问深交所接口超时），价格降级为第三方公开行情并标为 B 级，页面明确标注“交易所官方行情不可用”；此时用于校准口径的收盘价也继承该等级。若本次报价失败但留有上一条可信报价，页面会标出“沿用上次可信值”和原始抓取时间，该数值不代表当前行情。场内溢价与场外申购额度是两套指标，不合并、不相加、不互相推断。
 
 ## 本地运行
 
@@ -59,6 +63,7 @@
 ```bash
 npm ci
 npm test
+npm run typecheck
 npm start
 npm run build:site
 ```
@@ -84,6 +89,7 @@ npm exec tsx src/cli.ts run --config config/funds.local.json --no-save
 
 - `code`、`name`、`manager` 和 `adapter`
 - `strategy`：`active` 或 `passive`，不根据名称推断
+- `index`：适用时显式标记跟踪指数或主动基金的投资主题；网页用 `strategy` 统一筛选主动基金
 - `currency` 和 `shareClass`
 - `officialSources`：官方产品页、当前状态页或公告
 - `agency.eastmoney`：是否采集天天基金公开页
@@ -102,7 +108,7 @@ npm exec tsx src/cli.ts run --config config/funds.local.json --no-save
 }
 ```
 
-`kind` 支持 `product`、`current-status`、`notice` 和 `notice-index`。只有来源明确指出入口时，才应填写具体 `channel`；公告未区分 Web、APP 或柜台时不得自行推断。
+`kind` 支持 `product`、`current-status`、`notice` 和 `notice-index`。`notice-index` 指向当前公告列表或搜索入口，运行时发现最新适用公告；不能用一份旧公告长期固定每日额度。只有来源明确指出入口时，才应填写具体 `channel`；公告未区分 Web、APP 或柜台时不得自行推断。
 
 支付宝、银行和券商通常依赖登录态，只能通过 `manualChannels` 添加带 `verifiedAt` 和 `expiresAt` 的短期人工记录，格式见 [`config/manual-channel.example.json`](config/manual-channel.example.json)。过期记录会自动失效。
 
@@ -146,6 +152,8 @@ GitHub Actions 在工作日北京时间 09:10、14:30、15:05、20:30 自动执�
 
 单个数据源失败时会降级并显示告警；测试失败时不会部署。
 
+网页顶部的“抓取提示”列出当次采集告警，“公告发现异常”列出公告索引不可用或发现更新公告但未安全解析的基金；“直销数据未抓取到的基金”列出缺少可信直销观察的份额。排查时先看对应基金详情页的来源、证据等级和抓取时间；页面抓取成功但解析失败，与来源本身抓取失败是不同问题。`data/latest.json` 中的 `warnings`、`noticeHealth` 和 `health` 保留机器可读的诊断信息。
+
 ### 访问统计
 
 站点使用 [Umami](https://umami.is/) 统计公开页面访问量，不跟踪登录态或账户信息。构建时通过仓库变量注入，未配置则不输出任何统计脚本：
@@ -173,7 +181,7 @@ npm test
 1. 更新对应的 `src/adapters/*.ts` 官方入口或域名白名单。
 2. 只在必要时为 `src/parser.ts` 增加最小解析规则。
 3. 使用真实结构的脱敏 fixture 补充测试，同时验证页面变形会返回 `unknown`。
-4. 运行 `npm test`、`npm start` 和 `npm run build:site`。
+4. 运行 `npm test`、`npm run typecheck`、`npm start` 和 `npm run build:site`。
 
 不要抓取登录接口、绕过验证码，或保存 Cookie、账户和其他凭据。
 

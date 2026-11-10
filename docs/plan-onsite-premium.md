@@ -1,6 +1,6 @@
 # 场内纳指/标普 QDII 基金溢价率监控 —— 第一版计划
 
-> 状态：待评审（仅计划，未改代码）
+> 状态：历史实施计划；当前功能和操作说明见 [README](../README.md)，基金清单以 [`config/funds.example.json`](../config/funds.example.json) 为准。本文件的阶段安排及当时实测数值不代表当前运行状态。
 > 编写时间：2026-11-01（Asia/Shanghai）
 > 关联项目：qdii-direct-monitor（场外直销额度监控）
 
