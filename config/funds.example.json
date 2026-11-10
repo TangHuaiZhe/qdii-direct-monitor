@@ -26,10 +26,10 @@
     { "code": "513390", "name": "纳指100ETF博时", "manager": "博时基金", "exchange": "SSE", "vehicle": "ETF", "index": "nasdaq100", "strategy": "passive", "currency": "CNY", "shareClass": "场内", "linkFundCode": "016055", "officialQuoteUrl": "http://yunhq.sse.com.cn:32041/v1/sh1/snap/513390?select=name,last,preclose,iopv,open,high,low,volume,amount" },
     { "code": "513870", "name": "纳指ETF富国", "manager": "富国基金", "exchange": "SSE", "vehicle": "ETF", "index": "nasdaq100", "strategy": "passive", "currency": "CNY", "shareClass": "场内", "linkFundCode": null, "officialQuoteUrl": "http://yunhq.sse.com.cn:32041/v1/sh1/snap/513870?select=name,last,preclose,iopv,open,high,low,volume,amount" },
     { "code": "159612", "name": "标普500ETF国泰", "manager": "国泰基金", "exchange": "SZSE", "vehicle": "ETF", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "场内", "linkFundCode": null, "officialQuoteUrl": "https://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=159612" },
-    { "code": "159655", "name": "标普500ETF华夏", "manager": "华夏基金", "exchange": "SZSE", "vehicle": "ETF", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "场内", "linkFundCode": null, "officialQuoteUrl": "https://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=159655" },
-    { "code": "513500", "name": "标普500ETF博时", "manager": "博时基金", "exchange": "SSE", "vehicle": "ETF", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "场内", "linkFundCode": null, "officialQuoteUrl": "http://yunhq.sse.com.cn:32041/v1/sh1/snap/513500?select=name,last,preclose,iopv,open,high,low,volume,amount" },
+    { "code": "159655", "name": "标普500ETF华夏", "manager": "华夏基金", "exchange": "SZSE", "vehicle": "ETF", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "场内", "linkFundCode": "018064", "officialQuoteUrl": "https://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=159655" },
+    { "code": "513500", "name": "标普500ETF博时", "manager": "博时基金", "exchange": "SSE", "vehicle": "ETF", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "场内", "linkFundCode": "050025", "officialQuoteUrl": "http://yunhq.sse.com.cn:32041/v1/sh1/snap/513500?select=name,last,preclose,iopv,open,high,low,volume,amount" },
     { "code": "513650", "name": "标普500ETF南方", "manager": "南方基金", "exchange": "SSE", "vehicle": "ETF", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "场内", "linkFundCode": null, "officialQuoteUrl": "http://yunhq.sse.com.cn:32041/v1/sh1/snap/513650?select=name,last,preclose,iopv,open,high,low,volume,amount" },
-    { "code": "161125", "name": "标普500LOF", "manager": "易方达基金", "exchange": "SZSE", "vehicle": "LOF", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "场内", "linkFundCode": null, "officialQuoteUrl": "https://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=161125" },
+    { "code": "161125", "name": "标普500LOF", "manager": "易方达基金", "exchange": "SZSE", "vehicle": "LOF", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "场内", "linkFundCode": "161125", "officialQuoteUrl": "https://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=161125" },
     { "code": "161130", "name": "纳斯达克100LOF", "manager": "易方达基金", "exchange": "SZSE", "vehicle": "LOF", "index": "nasdaq100", "strategy": "passive", "currency": "CNY", "shareClass": "场内", "linkFundCode": "161130", "officialQuoteUrl": "https://www.szse.cn/api/market/ssjjhq/getTimeData?marketId=1&code=161130" }
   ],
   "notifications": { "type": "email", "mode": "changes", "hostEnv": "QDII_SMTP_HOST", "portEnv": "QDII_SMTP_PORT", "userEnv": "QDII_SMTP_USER", "passwordEnv": "QDII_SMTP_PASSWORD", "fromEnv": "QDII_EMAIL_FROM", "to": "tanghuaizhe@me.com" },
@@ -68,7 +68,14 @@
     "019441": { "portfolioCode": "万家纳指100", "sourceCode": "019441", "exposure": "direct" },
     "019442": { "portfolioCode": "万家纳指100", "sourceCode": "019441", "exposure": "direct" },
     "018043": { "portfolioCode": "天弘纳指100", "sourceCode": "018043", "exposure": "direct" },
-    "018044": { "portfolioCode": "天弘纳指100", "sourceCode": "018043", "exposure": "direct" }
+    "018044": { "portfolioCode": "天弘纳指100", "sourceCode": "018043", "exposure": "direct" },
+    "050025": {"portfolioCode": "博时标普500ETF", "sourceCode": "513500", "exposure": "look-through"},
+    "006075": {"portfolioCode": "博时标普500ETF", "sourceCode": "513500", "exposure": "look-through"},
+    "018738": {"portfolioCode": "博时标普500ETF", "sourceCode": "513500", "exposure": "look-through"},
+    "161125": {"portfolioCode": "易方达标普500指数", "sourceCode": "161125", "exposure": "direct"},
+    "012860": {"portfolioCode": "易方达标普500指数", "sourceCode": "161125", "exposure": "direct"},
+    "018064": {"portfolioCode": "华夏标普500ETF", "sourceCode": "159655", "exposure": "look-through"},
+    "018065": {"portfolioCode": "华夏标普500ETF", "sourceCode": "159655", "exposure": "look-through"}
   },
   "funds": [
     {
@@ -278,6 +285,41 @@
     {
       "code": "018044", "name": "天弘纳斯达克100指数发起（QDII）C", "manager": "天弘基金", "adapter": "tianhong", "strategy": "passive", "currency": "CNY", "shareClass": "C",
       "officialSources": [{ "url": "https://cdn-thweb.tianhongjijin.com.cn/fundnotice/e43cfbd0355ce78911df4551c2e84313.pdf", "kind": "notice", "channel": { "kind": "direct", "access": "all" }, "effectiveDate": "2026-04-08" }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "050025", "name": "博时标普500ETF联接A（人民币）", "manager": "博时基金", "adapter": "bosera", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://www.bosera.com/fund/050025.html", "kind": "product", "channel": { "kind": "direct", "access": "all" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "006075", "name": "博时标普500ETF联接C（人民币）", "manager": "博时基金", "adapter": "bosera", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{ "url": "https://www.bosera.com/fund/006075.html", "kind": "product", "channel": { "kind": "direct", "access": "all" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "018738", "name": "博时标普500ETF联接E（人民币）", "manager": "博时基金", "adapter": "bosera", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "E",
+      "officialSources": [{ "url": "https://www.bosera.com/fund/018738.html", "kind": "product", "channel": { "kind": "direct", "access": "all" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "161125", "name": "易方达标普500指数（QDII-LOF）A人民币", "manager": "易方达基金", "adapter": "efunds", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://e.efunds.com.cn/cart/aips?form=&fundCode=161125", "kind": "product", "channel": { "kind": "direct", "access": "web" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "012860", "name": "易方达标普500指数（QDII-LOF）C人民币", "manager": "易方达基金", "adapter": "efunds", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{ "url": "https://e.efunds.com.cn/cart/aips?form=&fundCode=012860", "kind": "product", "channel": { "kind": "direct", "access": "web" } }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "018064", "name": "华夏标普500ETF发起式联接（QDII）A人民币", "manager": "华夏基金", "adapter": "chinaamc", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "A",
+      "officialSources": [{ "url": "https://fund.chinaamc.com/product/publishGgList.do?fundcode=018064", "kind": "notice-index", "followLinks": true }],
+      "agency": { "eastmoney": true }, "manualChannels": []
+    },
+    {
+      "code": "018065", "name": "华夏标普500ETF发起式联接（QDII）C", "manager": "华夏基金", "adapter": "chinaamc", "index": "sp500", "strategy": "passive", "currency": "CNY", "shareClass": "C",
+      "officialSources": [{ "url": "https://fund.chinaamc.com/product/publishGgList.do?fundcode=018065", "kind": "notice-index", "followLinks": true }],
       "agency": { "eastmoney": true }, "manualChannels": []
     }
   ]

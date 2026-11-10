@@ -48,7 +48,9 @@ const collectBase = adapter.collect.bind(adapter);
 
 adapter.collect = async function collect(fund, context) {
   const safeFund = { ...fund, officialSources: fund.officialSources?.map((source) => ({ ...source, followLinks: false })) };
-  const rows = await collectBase(safeFund, context);
+  // The notice index can contain older suspension titles. For S&P 500 shares,
+  // use only a fully parsed latest notice; an index title is not a current status.
+  const rows = fund.index === "sp500" ? [] : await collectBase(safeFund, context);
   try {
     const listUrl = noticeListUrl(fund);
     const index = await context.fetchResource(listUrl, { allowedHosts: this.allowedHosts, timeoutMs: context.timeoutMs });
@@ -69,7 +71,7 @@ adapter.collect = async function collect(fund, context) {
     const timeline = await updateNoticeTimeline({ adapter: this, fund, context, candidates: [], indexChecked: false });
     if (timeline) rows.push(timeline);
   }
-  return rows;
+  return rows.length ? rows : [this.unknownRow(fund, context.observedAt, noticeListUrl(fund))];
 };
 
 module.exports = adapter;

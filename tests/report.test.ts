@@ -74,7 +74,7 @@ test("renders a self-contained Chinese HTML report", () => {
 
 test("renders the compact snapshot header and mobile card layout", () => {
   const html = renderHtml(payload());
-  assert.match(html, /NASDAQ 100 · 场外份额监控/);
+  assert.match(html, /纳斯达克 100 \/ 标普 500 · 场外份额监控/);
   assert.match(html, /class="masthead"/);
   assert.match(html, /class="snapshot" aria-label="最新快照"/);
   assert.match(html, /prefers-reduced-motion/);
@@ -84,6 +84,20 @@ test("renders the compact snapshot header and mobile card layout", () => {
   assert.doesNotMatch(html, /class="hero-code"/);
   assert.doesNotMatch(html, />NDX</);
   assert.doesNotMatch(html, /linear-gradient/);
+});
+
+test("renders distinct S&P 500 over-the-counter funds and index filter", () => {
+  const source = payload({ rows: [
+    { ...payload().rows[0], index: "nasdaq100" },
+    { ...payload().rows[0], fundCode: "050025", fundName: "博时标普500ETF联接A（人民币）", manager: "博时基金", index: "sp500" }
+  ] });
+  const html = renderHtml(source);
+  assert.match(html, /data-index-filter="sp500"[^>]*>标普500<\/button>/);
+  assert.match(html, /data-index="sp500"/);
+  assert.match(html, /data-index="nasdaq100"/);
+  assert.match(html, /row\.dataset\.index === index/);
+  assert.match(html, /博时标普500ETF联接A/);
+  assert.match(renderFundHtml(source, "050025"), /QDII Monitor \/ 标普500 \/ 050025/);
 });
 
 test("escapes untrusted source data", () => {
