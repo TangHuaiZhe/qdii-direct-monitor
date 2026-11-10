@@ -100,6 +100,21 @@ test("renders distinct S&P 500 over-the-counter funds and index filter", () => {
   assert.match(renderFundHtml(source, "050025"), /QDII Monitor \/ 标普500 \/ 050025/);
 });
 
+test("groups active funds into one category filter while keeping their detail labels", () => {
+  const base = payload().rows[0];
+  const source = payload({ rows: [
+    { ...base, fundCode: "001668", fundName: "汇添富全球移动互联", index: "globalMobileInternet", strategy: "active" },
+    { ...base, fundCode: "005698", fundName: "华夏全球科技先锋", index: "globalTechnology", strategy: "active" },
+    { ...base, fundCode: "040046", index: "nasdaq100", strategy: "passive" }
+  ] });
+  const html = renderHtml(source);
+  assert.equal((html.match(/data-index-filter="active"/g) || []).length, 1);
+  assert.match(html, /data-index-filter="active"[^>]*>主动<\/button>/);
+  assert.doesNotMatch(html, /data-index-filter="globalMobileInternet"|data-index-filter="globalTechnology"/);
+  assert.match(html, /index === "active" \? row\.dataset\.strategy === "active"/);
+  assert.match(renderFundHtml(source, "001668"), /QDII Monitor \/ 全球移动互联 \/ 001668/);
+});
+
 test("escapes untrusted source data", () => {
   const html = renderHtml(payload({ rows: [{ ...payload().rows[0], fundName: "<script>alert(1)</script>" }] }));
   assert.doesNotMatch(html, /<script>alert/);
