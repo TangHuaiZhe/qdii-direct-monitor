@@ -83,6 +83,7 @@ function stableSnapshot(
     if (quote.reliability?.grade === "D" && prior && prior.reliability?.grade !== "D") {
       return {
         ...prior,
+        linksOtcCode: quote.linksOtcCode,
         carriedForward: true,
         notes: [...(prior.notes || []), "Onsite data fetch failed this run; carried forward the last trusted value."]
       };
