@@ -38,8 +38,8 @@ test("renders a self-contained Chinese HTML report", () => {
   assert.match(html, /--primary:#b4232f/);
   assert.match(html, /--primary-deep:#781322/);
   assert.match(html, /class="masthead"/);
-  assert.match(html, /class="snapshot" aria-label="最新快照"/);
-  assert.match(html, /<a class="skip-link" href="#fund-list">/);
+  assert.match(html, /class="snapshot" aria-label="场外基金最新快照"/);
+  assert.match(html, /<a class="skip-link" href="#market-tabs">/);
   assert.match(html, /<caption class="sr-only">/);
   assert.match(html, /<th scope="col" aria-sort="none">/);
   assert.match(html, /aria-pressed="true"/);
@@ -74,9 +74,9 @@ test("renders a self-contained Chinese HTML report", () => {
 
 test("renders the compact snapshot header and mobile card layout", () => {
   const html = renderHtml(payload());
-  assert.match(html, /纳斯达克 100 \/ 标普 500 · 场外份额监控/);
+  assert.match(html, /纳斯达克 100 \/ 标普 500 · 场内与场外基金监控/);
   assert.match(html, /class="masthead"/);
-  assert.match(html, /class="snapshot" aria-label="最新快照"/);
+  assert.match(html, /class="snapshot" aria-label="场外基金最新快照"/);
   assert.match(html, /prefers-reduced-motion/);
   assert.match(html, /@media\(max-width:760px\)/);
   assert.match(html, /@media\(max-width:360px\)/);
@@ -474,8 +474,12 @@ function onsitePayload(overrides = {}) {
   });
 }
 
-test("renders the onsite premium section after the purchase summary", () => {
+test("renders onsite and OTC funds in separate accessible tabs", () => {
   const html = renderHtml(onsitePayload());
+  assert.match(html, /id="otc-tab"[^>]*role="tab"[^>]*aria-selected="true"[^>]*aria-controls="otc-tab-panel"/);
+  assert.match(html, /id="onsite-tab"[^>]*role="tab"[^>]*aria-selected="false"[^>]*aria-controls="onsite-tab-panel"/);
+  assert.match(html, /id="otc-tab-panel" role="tabpanel" aria-labelledby="otc-tab"/);
+  assert.match(html, /id="onsite-tab-panel" role="tabpanel" aria-labelledby="onsite-tab" hidden/);
   assert.match(html, /id="onsite-premium"/);
   assert.match(html, /<h2>场内折溢价<\/h2>/);
   assert.match(html, /场内折溢价 · 校准日 2026-10-29 · 18 只 · 抓取时间/);
@@ -503,14 +507,20 @@ test("renders the onsite premium section after the purchase summary", () => {
   assert.match(collapsed[1], /aria-expanded="false"/);
   assert.match(html, /<div class="onsite-all" id="onsite-all" hidden>/);
   assert.match(html, /getElementById\("onsite-toggle-all"\)/);
-  assert.ok(html.indexOf("当前更方便购买") < html.indexOf('id="onsite-premium"'), "onsite section follows the purchase summary");
-  assert.ok(html.indexOf('id="onsite-premium"') < html.indexOf('id="fund-list"'), "onsite section stays above the fund list");
+  const otcPanel = html.match(/<section class="market-tab-panel" id="otc-tab-panel"[\s\S]*?<\/section>\n<section class="market-tab-panel" id="onsite-tab-panel"/);
+  assert.ok(otcPanel, "OTC content has its own tab panel");
+  assert.match(otcPanel[0], /当前更方便购买/);
+  assert.match(otcPanel[0], /id="fund-list"/);
+  assert.doesNotMatch(otcPanel[0], /id="onsite-premium"/);
+  assert.ok(html.indexOf('id="fund-list"') < html.indexOf('id="onsite-premium"'), "onsite content is rendered in the separate second panel");
   assert.match(html, /沿用上次可信值 · 原始时间/);
   assert.match(html, /2026年10月29日 15:05:00/);
   assert.match(html, /class="grade grade-D"/);
   assert.match(html, /待核验/);
   assert.match(html, /getElementById\("onsite-table"\)/);
   assert.match(html, /getElementById\("fund-body"\)/);
+  assert.match(html, /selectTabFromHash/);
+  assert.match(html, /ArrowLeft/);
   assert.doesNotMatch(html, /href="http:\/\//);
 });
 
