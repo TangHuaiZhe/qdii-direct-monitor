@@ -84,6 +84,9 @@ test("renders the compact snapshot header and mobile card layout", () => {
   assert.doesNotMatch(html, /class="hero-code"/);
   assert.doesNotMatch(html, />NDX</);
   assert.doesNotMatch(html, /linear-gradient/);
+  assert.match(html, /\.masthead\{[^}]*border-left:4px solid var\(--primary\)[^}]*background:var\(--card\)/);
+  assert.match(html, /\.masthead h1\{[^}]*font-size:22px/);
+  assert.match(html, /\.snapshot\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 });
 
 test("renders distinct S&P 500 over-the-counter funds and index filter", () => {
