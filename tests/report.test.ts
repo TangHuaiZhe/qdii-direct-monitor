@@ -478,6 +478,8 @@ test("renders onsite and OTC funds in separate accessible tabs", () => {
   const html = renderHtml(onsitePayload());
   assert.match(html, /id="otc-tab"[^>]*role="tab"[^>]*aria-selected="true"[^>]*aria-controls="otc-tab-panel"/);
   assert.match(html, /id="onsite-tab"[^>]*role="tab"[^>]*aria-selected="false"[^>]*aria-controls="onsite-tab-panel"/);
+  assert.match(html, /<span class="market-tab-title">场外基金 <b>1<\/b><\/span><span class="market-tab-description">申购额度、销售渠道与综合费率<\/span>/);
+  assert.match(html, /<span class="market-tab-title">场内基金 <b>18<\/b><\/span><span class="market-tab-description">ETF \/ LOF 折溢价与行情<\/span>/);
   assert.match(html, /id="otc-tab-panel" role="tabpanel" aria-labelledby="otc-tab"/);
   assert.match(html, /id="onsite-tab-panel" role="tabpanel" aria-labelledby="onsite-tab" hidden/);
   assert.match(html, /id="onsite-premium"/);
@@ -499,14 +501,9 @@ test("renders onsite and OTC funds in separate accessible tabs", () => {
   assert.match(html, /href="onsite\/513100\/"/);
   assert.match(html, /官方可用 15 只 · 第三方降级 1 只 · 失败 2 只/);
   assert.ok(html.indexOf('data-onsite-code="161125"') < html.indexOf('data-onsite-code="159501"'), "onsite rows default to the lowest premium first");
-  const collapsed = html.match(/<div class="onsite-top3">([\s\S]*?)<\/div><div class="onsite-all"/);
-  assert.ok(collapsed, "onsite section starts collapsed with a top-3 list");
-  assert.ok(collapsed[1].indexOf("161125") < collapsed[1].indexOf("161130"), "top-3 is ordered by ascending premium");
-  assert.ok(collapsed[1].indexOf("161130") < collapsed[1].indexOf("513100"), "top-3 keeps the three lowest premiums");
-  assert.match(collapsed[1], /查看全部 18 只/);
-  assert.match(collapsed[1], /aria-expanded="false"/);
-  assert.match(html, /<div class="onsite-all" id="onsite-all" hidden>/);
-  assert.match(html, /getElementById\("onsite-toggle-all"\)/);
+  assert.doesNotMatch(html, /onsite-top3/);
+  assert.doesNotMatch(html, /onsite-toggle-all/);
+  assert.doesNotMatch(html, /查看全部 18 只/);
   const otcPanel = html.match(/<section class="market-tab-panel" id="otc-tab-panel"[\s\S]*?<\/section>\n<section class="market-tab-panel" id="onsite-tab-panel"/);
   assert.ok(otcPanel, "OTC content has its own tab panel");
   assert.match(otcPanel[0], /当前更方便购买/);
@@ -524,15 +521,15 @@ test("renders onsite and OTC funds in separate accessible tabs", () => {
   assert.doesNotMatch(html, /href="http:\/\//);
 });
 
-test("onsite section shows the full list when nothing is eligible for the top-3", () => {
+test("onsite section always shows the complete filterable list", () => {
   const quotes = normalOnsiteQuotes().map((quote) => ({ ...quote, carriedForward: true }));
   const html = renderHtml(onsitePayload({
     quotes,
     quotesByCode: Object.fromEntries(quotes.map((quote) => [quote.code, quote]))
   }));
   assert.doesNotMatch(html, /class="onsite-top3"/);
-  assert.match(html, /<div class="onsite-all" id="onsite-all">/);
-  assert.doesNotMatch(html, /id="onsite-all" hidden/);
+  assert.doesNotMatch(html, /id="onsite-all"/);
+  assert.match(html, /id="onsite-table"/);
   assert.match(html, /data-onsite-code="161125"/);
 });
 
