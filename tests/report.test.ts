@@ -533,6 +533,10 @@ test("onsite section always shows the complete filterable list", () => {
   assert.doesNotMatch(html, /class="onsite-top3"/);
   assert.doesNotMatch(html, /id="onsite-all"/);
   assert.match(html, /id="onsite-table"/);
+  assert.match(html, /#onsite-table th:nth-child\(1\)\{width:7%\}/);
+  assert.match(html, /#onsite-table th:nth-child\(2\)\{width:15%\}/);
+  assert.match(html, /#fund-list thead th:first-child\{width:36%\}/);
+  assert.doesNotMatch(html, /(?<!#fund-list )thead th:first-child\{width:36%\}/);
   assert.match(html, /data-onsite-code="161125"/);
 });
 
