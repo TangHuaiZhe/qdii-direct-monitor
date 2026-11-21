@@ -3,6 +3,7 @@
 const { buildSearchText } = require("../miniapp/utils/pinyin");
 
 const REPOSITORY_URL = "https://github.com/TangHuaiZhe/qdii-direct-monitor";
+const CLARITY_PROJECT_ID = "zgx52khmnm";
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -11,11 +12,12 @@ function escapeHtml(value) {
 }
 
 function analyticsSnippet() {
+  const clarity = `<script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script","${CLARITY_PROJECT_ID}");</script>`;
   const websiteId = String(process.env.UMAMI_WEBSITE_ID || "").trim();
-  if (!websiteId) return "";
+  if (!websiteId) return clarity;
   const src = String(process.env.UMAMI_SCRIPT_URL || "https://cloud.umami.is/script.js").trim();
-  if (!/^https:\/\/[^\s"'<>]+$/i.test(src)) return "";
-  return `<script defer src="${escapeHtml(src)}" data-website-id="${escapeHtml(websiteId)}"></script>`;
+  if (!/^https:\/\/[^\s"'<>]+$/i.test(src)) return clarity;
+  return `${clarity}<script defer src="${escapeHtml(src)}" data-website-id="${escapeHtml(websiteId)}"></script>`;
 }
 
 function statusLabel(status) {

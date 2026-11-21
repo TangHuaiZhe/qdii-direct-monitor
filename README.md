@@ -165,7 +165,9 @@ GitHub Actions 在工作日北京时间 09:10、14:30、15:05、20:30 自动执�
 
 ### 访问统计
 
-站点使用 [Umami](https://umami.is/) 统计公开页面访问量，不跟踪登录态或账户信息。构建时通过仓库变量注入，未配置则不输出任何统计脚本：
+站点在所有公开页面中加载 [Microsoft Clarity](https://clarity.microsoft.com/)（项目 ID `zgx52khmnm`），用于分析公开页面的访问路径、热图和会话交互；站点本身不包含登录页，也不会把基金账户、Cookie 或其他凭据写入页面。Clarity 脚本由 `src/report.ts` 统一注入首页、场外基金详情页和场内基金详情页。
+
+站点同时支持 [Umami](https://umami.is/) 统计公开页面访问量。Umami 构建配置通过仓库变量注入，未配置时仅加载 Clarity：
 
 - `UMAMI_WEBSITE_ID`：Umami 站点 ID，配置后所有看板和详情页自动注入 `https://cloud.umami.is/script.js`。
 - `UMAMI_SCRIPT_URL`：可选，自托管 Umami 时填写脚本地址（必须是 HTTPS）。

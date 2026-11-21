@@ -624,12 +624,18 @@ test("localizes onsite reliability explanations", () => {
   assert.match(onsiteSectionHtml(onsitePayload()), /场内折溢价/);
 });
 
-test("injects Umami analytics only when a website id is configured", () => {
+test("injects Clarity on every public page and Umami only when configured", () => {
   const saved = { id: process.env.UMAMI_WEBSITE_ID, src: process.env.UMAMI_SCRIPT_URL };
   try {
     delete process.env.UMAMI_WEBSITE_ID;
     delete process.env.UMAMI_SCRIPT_URL;
-    assert.equal(analyticsSnippet(), "");
+    const clarityOnly = analyticsSnippet();
+    assert.match(clarityOnly, /https:\/\/www\.clarity\.ms\/tag\//);
+    assert.match(clarityOnly, /"zgx52khmnm"/);
+    assert.doesNotMatch(clarityOnly, /cloud\.umami\.is/);
+    assert.match(renderHtml(payload()), /"zgx52khmnm"\);<\/script><\/head>/);
+    assert.match(renderFundHtml(payload(), "040046"), /"zgx52khmnm"\);<\/script><\/head>/);
+    assert.match(renderOnsiteFundHtml(onsitePayload(), "513100"), /"zgx52khmnm"\);<\/script><\/head>/);
     assert.doesNotMatch(renderHtml(payload()), /cloud\.umami\.is/);
     assert.doesNotMatch(renderFundHtml(payload(), "040046"), /cloud\.umami\.is/);
 
@@ -637,11 +643,13 @@ test("injects Umami analytics only when a website id is configured", () => {
     const snippet = analyticsSnippet();
     assert.match(snippet, /<script defer src="https:\/\/cloud\.umami\.is\/script\.js"/);
     assert.match(snippet, /data-website-id="f4d3363b-69a2-4185-a565-c6b603b386e9"/);
+    assert.match(renderHtml(payload()), /"zgx52khmnm"\);<\/script><script defer src="https:\/\/cloud\.umami\.is\/script\.js"/);
     assert.match(renderHtml(payload()), /data-website-id="f4d3363b-69a2-4185-a565-c6b603b386e9"><\/script><\/head>/);
     assert.match(renderFundHtml(payload(), "040046"), /data-website-id="f4d3363b-69a2-4185-a565-c6b603b386e9"><\/script><\/head>/);
 
     process.env.UMAMI_SCRIPT_URL = "http://insecure.example.com/script.js";
-    assert.equal(analyticsSnippet(), "");
+    assert.match(analyticsSnippet(), /"zgx52khmnm"/);
+    assert.doesNotMatch(analyticsSnippet(), /insecure\.example\.com/);
   } finally {
     if (saved.id === undefined) delete process.env.UMAMI_WEBSITE_ID; else process.env.UMAMI_WEBSITE_ID = saved.id;
     if (saved.src === undefined) delete process.env.UMAMI_SCRIPT_URL; else process.env.UMAMI_SCRIPT_URL = saved.src;
