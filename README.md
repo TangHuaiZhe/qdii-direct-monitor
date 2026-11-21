@@ -79,10 +79,6 @@ npm exec tsx src/cli.ts run --config config/funds.local.json --no-save
 
 GitHub Actions 在工作日北京时间 09:10、14:30、15:05、20:30 自动抓取并部署 GitHub Pages；单个来源失败时显示告警，测试失败时不部署。
 
-## 访问统计
-
-所有公开页面加载 [Microsoft Clarity](https://clarity.microsoft.com/)（项目 ID `zgx52khmnm`）。项目也支持可选的 [Umami](https://umami.is/)：配置 `UMAMI_WEBSITE_ID` 后启用，使用自托管脚本时可另设 HTTPS 的 `UMAMI_SCRIPT_URL`。
-
 ## 许可证
 
 项目采用 MIT 许可证。设计复用了 [`aiten2/qdii-purchase-limits`](https://github.com/aiten2/qdii-purchase-limits) 的渠道快照、变化检测、历史与 webhook 思路，具体声明见 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
